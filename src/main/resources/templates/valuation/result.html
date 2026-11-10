@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/base :: layout(~{::title}, ~{::#main-content})}">
+<head>
+    <title>Báo Cáo Định Giá Chi Tiết - Car Valuation AI</title>
+</head>
+<body>
+<div id="main-content">
+    <div class="container py-4">
+        <!-- Breadcrumb & Session Id -->
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <a th:href="@{/history}" class="text-decoration-none text-muted small"><i class="bi bi-arrow-left me-1"></i>Danh sách hồ sơ định giá</a>
+                <h3 class="fw-bold mb-0 mt-1">
+                    Báo Cáo Định Giá Xe:
+                    <span class="text-primary" th:if="${vehicle != null}" th:text="${vehicle.make + ' ' + vehicle.model + ' (' + vehicle.year + ')'}">Toyota Vios 2022</span>
+                </h3>
+            </div>
+            <div class="text-end">
+                <span class="badge bg-secondary">Mã hồ sơ: #<span th:text="${session.id}">1</span></span>
+                <div class="small text-muted mt-1" th:text="${#temporals.format(session.createdAt, 'dd/MM/yyyy HH:mm')}">01/01/2026 10:00</div>
+            </div>
+        </div>
+
+        <!-- Trạng thái thẩm định chuyên gia nếu có -->
+        <div class="alert alert-info border-info d-flex align-items-center mb-4 rounded-3 shadow-sm" th:if="${session.status.name() == 'EXPERT_REVIEWED'}">
+            <i class="bi bi-patch-check-fill fs-3 text-info me-3"></i>
+            <div class="flex-grow-1">
+                <h6 class="fw-bold mb-1">Hồ Sơ Đã Được Chuyên Gia Thẩm Định &amp; Điều Chỉnh Giá</h6>
+                <div class="small" th:if="${session.expert != null}">
+                    Thẩm định bởi: <strong th:text="${session.expert.fullName != null ? session.expert.fullName : session.expert.username}">Chuyên viên</strong>
+                </div>
+                <div class="small mt-1 text-dark" th:if="${session.expertNotes != null}">
+                    <strong>Nhận xét chuyên gia:</strong> <em th:text="${session.expertNotes}">Giá đã được đối soát theo mặt bằng thực tế tại các salon xe cũ Hà Nội.</em>
+                </div>
+            </div>
+            <span class="badge bg-success fs-6 px-3 py-2">ĐÃ DUYỆT BỞI EXPERT</span>
+        </div>
+
+        <!-- Hero Card: Giá Định Giá Đề Xuất -->
+        <div class="valuation-hero-card mb-4">
+            <div class="row align-items-center g-4">
+                <div class="col-lg-7">
+                    <span class="badge bg-info text-dark fw-bold px-3 py-2 rounded-pill mb-2">
+                        <i class="bi bi-check-circle-fill me-1"></i> GIÁ TRỊ THỊ TRƯỜNG ĐỀ XUẤT
+                    </span>
+                    <div class="price-display" th:text="${#numbers.formatDecimal(session.finalPriceVnd, 0, 'COMMA', 0, 'POINT') + ' VNĐ'}">
+                        485.000.000 VNĐ
+                    </div>
+                    <div class="price-range mt-1">
+                        Khoảng giá giao dịch hợp lý:
+                        <strong class="text-white" th:text="${#numbers.formatDecimal(session.minPriceVnd, 0, 'COMMA', 0, 'POINT') + ' đ'}">470.000.000 đ</strong>
+                        đến
+                        <strong class="text-white" th:text="${#numbers.formatDecimal(session.maxPriceVnd, 0, 'COMMA', 0, 'POINT') + ' đ'}">500.000.000 đ</strong>
+                    </div>
+                    <div class="mt-3">
+                        <span class="badge bg-success-subtle text-success border border-success-subtle px-3 py-1" th:if="${aiResult != null && aiResult.priceGrade != null}" th:text="${'Mức đánh giá: ' + aiResult.priceGrade}">Mức đánh giá: GIÁ HỢP LÝ</span>
+                        <span class="badge bg-secondary px-3 py-1 ms-2" th:if="${aiResult != null}">Độ tin cậy AI: <span th:text="${#numbers.formatPercent(aiResult.aiConfidence, 1, 0)}">92%</span></span>
+                    </div>
+                </div>
+
+                <div class="col-lg-5 text-lg-end border-start border-secondary ps-lg-4">
+                    <div class="d-flex flex-column gap-2">
+                        <button type="button" class="btn btn-warning fw-bold shadow-sm" onclick="window.print()">
+                            <i class="bi bi-printer me-1"></i> In / Xuất Báo Cáo PDF
+                        </button>
+                        <a th:href="@{/history}" class="btn btn-outline-light">
+                            <i class="bi bi-clock-history me-1"></i> Quản Lý Hồ Sơ Xe Của Tôi
+                        </a>
+                        <a th:href="@{/valuation/start}" class="btn btn-outline-info">
+                            <i class="bi bi-plus-circle me-1"></i> Định Giá Chiếc Xe Khác
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row g-4 mb-4">
+            <!-- Bảng phân rã tính giá 4 lớp (Java Pricing Engine) -->
+            <div class="col-lg-7">
+                <div class="card border-0 shadow-sm rounded-4 p-4 bg-white h-100">
+                    <h5 class="fw-bold mb-3 text-dark d-flex align-items-center">
+                        <i class="bi bi-calculator-fill text-primary me-2"></i> Chi Tiết Khấu Hao &amp; Điều Chỉnh (Pricing Engine)
+                    </h5>
+
+                    <div class="table-responsive" th:if="${aiResult != null}">
+                        <table class="table table-bordered align-middle">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Hạng Mục Tính Toán</th>
+                                    <th class="text-end" style="width: 180px;">Giá Trị Điều Chỉnh</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>
+                                        <strong>1. Giá thị trường cơ sở (Base Market Price)</strong>
+                                        <div class="small text-muted">Dựa trên cơ sở dữ liệu mẫu xe và khấu hao năm sử dụng</div>
+                                    </td>
+                                    <td class="text-end fw-bold text-dark" th:text="${#numbers.formatDecimal(aiResult.baseMarketPriceVnd, 0, 'COMMA', 0, 'POINT') + ' đ'}">
+                                        500.000.000 đ
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>
+                                        <strong>2. Điều chỉnh theo số km ODO thực tế</strong>
+                                        <div class="small text-muted">So sánh với mức chuẩn trung bình 13.500 km/năm</div>
+                                    </td>
+                                    <td class="text-end fw-bold"
+                                        th:classappend="${aiResult.mileageAdjustmentVnd >= 0 ? 'text-success' : 'text-danger'}"
+                                        th:text="${(aiResult.mileageAdjustmentVnd >= 0 ? '+' : '') + #numbers.formatDecimal(aiResult.mileageAdjustmentVnd, 0, 'COMMA', 0, 'POINT') + ' đ'}">
+                                        +5.000.000 đ
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>
+                                        <strong>3. Khấu trừ tình trạng hư hỏng ngoại thất</strong>
+                                        <div class="small text-muted">AI nhận diện từ 4 góc ảnh (vết xước, móp, nứt đèn)</div>
+                                    </td>
+                                    <td class="text-end fw-bold"
+                                        th:classappend="${aiResult.damageAdjustmentVnd >= 0 ? 'text-success' : 'text-danger'}"
+                                        th:text="${#numbers.formatDecimal(aiResult.damageAdjustmentVnd, 0, 'COMMA', 0, 'POINT') + ' đ'}">
+                                        -3.500.000 đ
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>
+                                        <strong>4. Điểm tình trạng kỹ thuật &amp; Bảo dưỡng</strong>
+                                        <div class="small text-muted">Lịch sử bảo dưỡng hãng, dàn lốp, thời hạn đăng kiểm</div>
+                                    </td>
+                                    <td class="text-end fw-bold"
+                                        th:classappend="${aiResult.questionnaireAdjustmentVnd >= 0 ? 'text-success' : 'text-danger'}"
+                                        th:text="${(aiResult.questionnaireAdjustmentVnd >= 0 ? '+' : '') + #numbers.formatDecimal(aiResult.questionnaireAdjustmentVnd, 0, 'COMMA', 0, 'POINT') + ' đ'}">
+                                        +4.000.000 đ
+                                    </td>
+                                </tr>
+                                <tr class="table-primary fw-bold fs-6">
+                                    <td>TỔNG GIÁ TRỊ ĐỊNH GIÁ (ESTIMATED PRICE)</td>
+                                    <td class="text-end text-primary" th:text="${#numbers.formatDecimal(aiResult.estimatedPriceVnd, 0, 'COMMA', 0, 'POINT') + ' đ'}">
+                                        485.000.000 đ
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Ghi chú giải trình -->
+                    <div class="mt-3" th:if="${aiResult != null && aiResult.explanationNotes != null}">
+                        <h6 class="fw-bold small text-secondary mb-2"><i class="bi bi-info-circle me-1"></i> Căn cứ giải trình chi tiết:</h6>
+                        <ul class="list-unstyled small mb-0">
+                            <li th:each="n : ${aiResult.explanationNotes}" class="mb-1 text-secondary">
+                                &bull; <span th:text="${n}">Chi tiết</span>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Thông số kỹ thuật xe -->
+            <div class="col-lg-5">
+                <div class="card border-0 shadow-sm rounded-4 p-4 bg-white h-100">
+                    <h5 class="fw-bold mb-3 text-dark d-flex align-items-center">
+                        <i class="bi bi-info-circle-fill text-info me-2"></i> Hồ Sơ Kỹ Thuật Của Xe
+                    </h5>
+
+                    <ul class="list-group list-group-flush small" th:if="${vehicle != null}">
+                        <li class="list-group-item d-flex justify-content-between px-0">
+                            <span class="text-muted">Số Khung (VIN):</span>
+                            <strong class="font-monospace text-uppercase" th:text="${vehicle.vin}">VF8A1XXXXXXXXXXXX</strong>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between px-0">
+                            <span class="text-muted">Hãng sản xuất:</span>
+                            <strong th:text="${vehicle.make}">Toyota</strong>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between px-0">
+                            <span class="text-muted">Dòng xe (Model):</span>
+                            <strong th:text="${vehicle.model}">Vios</strong>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between px-0">
+                            <span class="text-muted">Năm sản xuất:</span>
+                            <strong th:text="${vehicle.year}">2022</strong>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between px-0">
+                            <span class="text-muted">Phiên bản:</span>
+                            <strong th:text="${vehicle.trim != null ? vehicle.trim : 'Tiêu chuẩn'}">1.5G CVT</strong>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between px-0">
+                            <span class="text-muted">Số km lăn bánh (ODO):</span>
+                            <strong class="text-success fw-bold" th:text="${vehicle.odoMileage != null ? #numbers.formatDecimal(vehicle.odoMileage, 0, 'COMMA', 0, 'POINT') + ' km' : 'Chưa có'}">35.000 km</strong>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between px-0">
+                            <span class="text-muted">Hộp số:</span>
+                            <span th:text="${vehicle.transmission != null ? vehicle.transmission : 'Tự động'}">Tự động</span>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between px-0">
+                            <span class="text-muted">Nhiên liệu:</span>
+                            <span th:text="${vehicle.fuelType != null ? vehicle.fuelType : 'Xăng'}">Xăng</span>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between px-0">
+                            <span class="text-muted">Biển số:</span>
+                            <span class="badge bg-light text-dark border" th:text="${vehicle.licensePlate != null ? vehicle.licensePlate : 'Chưa nhập'}">30H-888.88</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bộ ảnh ngoại thất đã chụp & phân tích -->
+        <div class="card border-0 shadow-sm rounded-4 p-4 bg-white mb-4" th:if="${photos != null && !photos.isEmpty()}">
+            <h5 class="fw-bold mb-3"><i class="bi bi-images text-warning me-2"></i> Thư Viện Ảnh Ngoại Thất Đã Kiểm Định</h5>
+            <div class="row g-3">
+                <div class="col-6 col-md-3" th:each="p : ${photos}">
+                    <div class="card h-100 border rounded-3 overflow-hidden shadow-sm">
+                        <img th:src="${p.photoUrl}" class="card-img-top" style="height: 160px; object-fit: cover;" th:alt="${p.photoType}">
+                        <div class="card-body p-2 text-center small">
+                            <div class="fw-bold mb-1" th:text="${p.photoType}">FRONT</div>
+                            <span class="badge bg-secondary" th:if="${p.status != null}" th:text="${p.status}">ANALYZED</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tuyên bố miễn trừ trách nhiệm pháp lý -->
+        <div class="card border-warning bg-warning bg-opacity-10 rounded-4 p-4">
+            <h6 class="fw-bold text-dark mb-2"><i class="bi bi-shield-exclamation text-warning me-2"></i> Cam Kết Minh Bạch &amp; Miễn Trừ Trách Nhiệm</h6>
+            <p class="small text-secondary mb-0">
+                Báo cáo định giá này do AI và thuật toán tự động tính toán dựa trên các hình ảnh ngoại thất, số ODO và bảng hỏi do người dùng cung cấp. Hệ thống <strong>không khẳng định hoặc loại trừ các hư hỏng nặng về kết cấu khung gầm, ngập nước (thủy kích) hay can thiệp bổ máy động cơ</strong>. Khách hàng nên phối hợp cùng chuyên gia thẩm định trực tiếp hoặc mang xe đến trung tâm kiểm định ủy quyền trước khi thực hiện giao dịch mua bán thực tế.
+            </p>
+        </div>
+    </div>
+</div>
+</body>
+</html>

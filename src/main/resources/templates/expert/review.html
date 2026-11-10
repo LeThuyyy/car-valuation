@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/base :: layout(~{::title}, ~{::#main-content})}">
+<head>
+    <title>Thẩm Định Chi Tiết Hồ Sơ - Car Valuation AI</title>
+</head>
+<body>
+<div id="main-content">
+    <div class="container py-4">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <a th:href="@{/expert/dashboard}" class="text-decoration-none text-muted small"><i class="bi bi-arrow-left me-1"></i>Quay lại danh sách chờ duyệt</a>
+                <h3 class="fw-bold mb-0 mt-1">Giám Định Hồ Sơ Xe #<span th:text="${session.id}">1</span></h3>
+            </div>
+            <div>
+                <span class="badge bg-info text-dark fs-6 px-3 py-2">CHUYÊN GIA THẨM ĐỊNH</span>
+            </div>
+        </div>
+
+        <div class="row g-4 mb-4">
+            <!-- Thông tin xe & đề xuất của AI -->
+            <div class="col-lg-7">
+                <div class="card border-0 shadow-sm rounded-4 p-4 bg-white mb-4">
+                    <h5 class="fw-bold mb-3"><i class="bi bi-car-front text-primary me-2"></i> Thông Tin Xe Khách Hàng Khai Báo</h5>
+                    <div class="row g-2 small">
+                        <div class="col-6 col-md-4">Hãng &amp; Mẫu: <strong th:text="${vehicle.make + ' ' + vehicle.model}">Toyota Vios</strong></div>
+                        <div class="col-6 col-md-4">Năm sản xuất: <strong th:text="${vehicle.year}">2022</strong></div>
+                        <div class="col-6 col-md-4">Số ODO: <strong class="text-success" th:text="${session.odoMileage != null ? #numbers.formatDecimal(session.odoMileage, 0, 'COMMA', 0, 'POINT') + ' km' : '-'}">35.000 km</strong></div>
+                        <div class="col-6 col-md-4">Số Khung (VIN): <code th:text="${session.vinScanned}">VF8A1XXXXXXXXXXXX</code></div>
+                        <div class="col-6 col-md-4">Biển số: <span class="badge bg-light text-dark border" th:text="${vehicle.licensePlate != null ? vehicle.licensePlate : '-'}">30H-123.45</span></div>
+                        <div class="col-6 col-md-4">Hộp số / Nhiên liệu: <span th:text="${vehicle.transmission + ' / ' + vehicle.fuelType}">Tự động / Xăng</span></div>
+                    </div>
+                </div>
+
+                <!-- Bảng giá AI đã tính toán -->
+                <div class="card border-0 shadow-sm rounded-4 p-4 bg-white mb-4" th:if="${aiResult != null}">
+                    <h5 class="fw-bold mb-3"><i class="bi bi-cpu text-info me-2"></i> Kết Quả Tính Toán Ban Đầu Của AI</h5>
+                    <table class="table table-sm align-middle small mb-3">
+                        <tbody>
+                            <tr>
+                                <td>Giá cơ sở thị trường (Base Price):</td>
+                                <td class="text-end fw-bold" th:text="${#numbers.formatDecimal(aiResult.baseMarketPriceVnd, 0, 'COMMA', 0, 'POINT') + ' đ'}">500.000.000 đ</td>
+                            </tr>
+                            <tr>
+                                <td>Điều chỉnh số km ODO:</td>
+                                <td class="text-end fw-bold" th:text="${#numbers.formatDecimal(aiResult.mileageAdjustmentVnd, 0, 'COMMA', 0, 'POINT') + ' đ'}">+5.000.000 đ</td>
+                            </tr>
+                            <tr>
+                                <td>Khấu trừ xước móp ngoại thất (AI Vision):</td>
+                                <td class="text-end fw-bold text-danger" th:text="${#numbers.formatDecimal(aiResult.damageAdjustmentVnd, 0, 'COMMA', 0, 'POINT') + ' đ'}">-3.500.000 đ</td>
+                            </tr>
+                            <tr>
+                                <td>Điểm bảng hỏi tình trạng kỹ thuật:</td>
+                                <td class="text-end fw-bold text-success" th:text="${#numbers.formatDecimal(aiResult.questionnaireAdjustmentVnd, 0, 'COMMA', 0, 'POINT') + ' đ'}">+4.000.000 đ</td>
+                            </tr>
+                            <tr class="table-primary fw-bold">
+                                <td>GIÁ AI ĐỀ XUẤT:</td>
+                                <td class="text-end text-primary fs-6" th:text="${#numbers.formatDecimal(aiResult.estimatedPriceVnd, 0, 'COMMA', 0, 'POINT') + ' đ'}">485.000.000 đ</td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <div class="small text-muted" th:if="${aiResult.explanationNotes != null}">
+                        <strong class="d-block mb-1">Căn cứ giải trình của hệ thống:</strong>
+                        <ul class="mb-0 ps-3">
+                            <li th:each="n : ${aiResult.explanationNotes}" th:text="${n}">Chi tiết</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Thư viện ảnh ngoại thất để chuyên gia soi lỗi -->
+                <div class="card border-0 shadow-sm rounded-4 p-4 bg-white" th:if="${photos != null && !photos.isEmpty()}">
+                    <h5 class="fw-bold mb-3"><i class="bi bi-images text-warning me-2"></i> Ảnh Ngoại Thất Do Khách Hàng Chụp</h5>
+                    <div class="row g-3">
+                        <div class="col-6 col-md-4" th:each="p : ${photos}">
+                            <div class="border rounded-3 overflow-hidden text-center">
+                                <a th:href="${p.photoUrl}" target="_blank">
+                                    <img th:src="${p.photoUrl}" class="img-fluid" style="height: 140px; width: 100%; object-fit: cover;" th:alt="${p.photoType}">
+                                </a>
+                                <div class="p-2 small fw-bold bg-light" th:text="${p.photoType}">FRONT</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Form chuyên gia can thiệp & điều chỉnh giá -->
+            <div class="col-lg-5">
+                <div class="card border-0 shadow-sm rounded-4 p-4 bg-white sticky-top" style="top: 85px;">
+                    <div class="d-flex align-items-center mb-3">
+                        <div class="bg-warning bg-opacity-10 text-warning rounded-circle p-2 me-3">
+                            <i class="bi bi-patch-check fs-4"></i>
+                        </div>
+                        <div>
+                            <h5 class="fw-bold mb-0">Biểu Mẫu Duyệt Giá Chuyên Gia</h5>
+                            <small class="text-muted">Cập nhật giá cuối cùng và ghi chú chuyên môn</small>
+                        </div>
+                    </div>
+
+                    <form th:action="@{'/expert/review/' + ${session.id}}" method="post">
+                        <div class="mb-3">
+                            <label for="adjustedPrice" class="form-label fw-bold">
+                                Giá Thẩm Định Cuối Cùng (VNĐ) <span class="text-danger">*</span>
+                            </label>
+                            <div class="input-group input-group-lg">
+                                <input type="number" class="form-control text-end fw-bold text-primary" id="adjustedPrice" name="adjustedPrice"
+                                       th:value="${session.finalPriceVnd != null ? session.finalPriceVnd : 485000000}" step="1000000" required>
+                                <span class="input-group-text bg-light fw-bold">VNĐ</span>
+                            </div>
+                            <small class="text-muted">Chuyên gia có quyền tăng hoặc giảm giá dựa trên kinh nghiệm thực tế thị trường.</small>
+                        </div>
+
+                        <div class="mb-4">
+                            <label for="expertNotes" class="form-label fw-bold">
+                                Nhận Xét Chuyên Môn / Căn Cứ Điều Chỉnh <span class="text-danger">*</span>
+                            </label>
+                            <textarea class="form-control" id="expertNotes" name="expertNotes" rows="5"
+                                      placeholder="Ví dụ: Xe màu đỏ nguyên bản giữ gìn, lốp mới thay date 2024, xước nhẹ cản trước đã trừ 2 triệu, giá đề xuất thị trường giao dịch nhanh 485 triệu." required></textarea>
+                        </div>
+
+                        <button type="submit" class="btn btn-warning w-100 py-2 fw-bold shadow-sm">
+                            <i class="bi bi-check-circle-fill me-1"></i> Xác Nhận Duyệt Hồ Sơ
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+</html>

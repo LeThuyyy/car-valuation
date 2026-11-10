@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/base :: layout(~{::title}, ~{::#main-content})}">
+<head>
+    <title>Đăng nhập - Car Valuation AI</title>
+</head>
+<body>
+<div id="main-content">
+    <div class="container py-5">
+        <div class="row justify-content-center">
+            <div class="col-md-6 col-lg-5">
+                <div class="card border-0 shadow-lg rounded-4 p-4 p-md-5 bg-white">
+                    <div class="text-center mb-4">
+                        <div class="bg-primary bg-opacity-10 text-primary rounded-circle d-inline-flex p-3 mb-2">
+                            <i class="bi bi-person-lock fs-2"></i>
+                        </div>
+                        <h3 class="fw-bold">Đăng Nhập</h3>
+                        <p class="text-muted small">Đăng nhập để định giá xe và xem lịch sử của bạn</p>
+                    </div>
+
+                    <form th:action="@{/login}" method="post">
+                        <div class="mb-3">
+                            <label for="username" class="form-label fw-semibold">Tên đăng nhập hoặc Email</label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="bi bi-person"></i></span>
+                                <input type="text" class="form-control" id="username" name="username" placeholder="Nhập username hoặc email" required autofocus>
+                            </div>
+                        </div>
+
+                        <div class="mb-4">
+                            <label for="password" class="form-label fw-semibold">Mật khẩu</label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="bi bi-key"></i></span>
+                                <input type="password" class="form-control" id="password" name="password" placeholder="Nhập mật khẩu" required>
+                            </div>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary w-100 py-2 fw-bold shadow-sm">
+                            <i class="bi bi-box-arrow-in-right me-1"></i> Đăng Nhập
+                        </button>
+                    </form>
+
+                    <div class="mt-4 pt-3 border-top text-center">
+                        <p class="small text-muted mb-2">Chưa có tài khoản?</p>
+                        <a th:href="@{/register}" class="btn btn-outline-secondary btn-sm w-100">
+                            <i class="bi bi-person-plus me-1"></i> Tạo tài khoản mới (Khách hàng)
+                        </a>
+                    </div>
+
+                    <!-- Quick logins hint -->
+                    <div class="mt-4 p-3 bg-light rounded-3 small">
+                        <strong class="d-block mb-1 text-secondary"><i class="bi bi-info-circle me-1"></i>Tài khoản thử nghiệm:</strong>
+                        <div class="d-flex justify-content-between mb-1">
+                            <span>Quản trị: <code>admin</code> / <code>admin123</code></span>
+                            <span class="badge bg-danger">ADMIN</span>
+                        </div>
+                        <div class="d-flex justify-content-between mb-1">
+                            <span>Chuyên gia: <code>expert</code> / <code>expert123</code></span>
+                            <span class="badge bg-info text-dark">EXPERT</span>
+                        </div>
+                        <div class="d-flex justify-content-between">
+                            <span>Khách hàng: <code>user</code> / <code>user123</code></span>
+                            <span class="badge bg-secondary">USER</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+</html>

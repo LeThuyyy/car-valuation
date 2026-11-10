@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/base :: layout(~{::title}, ~{::#main-content})}">
+<head>
+    <title>Bàn Thẩm Định Chuyên Gia - Car Valuation AI</title>
+</head>
+<body>
+<div id="main-content">
+    <div class="container py-4">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <span class="badge bg-info text-dark px-3 py-1 fw-bold rounded-pill mb-1">
+                    <i class="bi bi-patch-check-fill me-1"></i> PHÂN HỆ CHUYÊN GIA (EXPERT)
+                </span>
+                <h3 class="fw-bold mb-0">Bàn Thẩm Định &amp; Duyệt Giá Xe</h3>
+                <small class="text-muted">Danh sách các hồ sơ xe do AI định giá đang chờ chuyên gia giám định độc lập đối soát</small>
+            </div>
+            <div>
+                <span class="badge bg-primary fs-6 px-3 py-2">
+                    Hồ sơ chờ duyệt: <strong th:text="${pendingSessions != null ? pendingSessions.size() : 0}">0</strong>
+                </span>
+            </div>
+        </div>
+
+        <div class="card border-0 shadow-sm rounded-4 bg-white overflow-hidden" th:if="${pendingSessions != null && !pendingSessions.isEmpty()}">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th class="ps-4">Mã HS</th>
+                            <th>Khách Hàng</th>
+                            <th>Thông Tin Xe</th>
+                            <th>Số Khung (VIN)</th>
+                            <th>Số ODO</th>
+                            <th>Giá AI Đề Xuất</th>
+                            <th>Ngày Tạo</th>
+                            <th class="text-end pe-4">Thao Tác</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:each="s : ${pendingSessions}">
+                            <td class="ps-4 fw-bold">#<span th:text="${s.id}">1</span></td>
+                            <td>
+                                <strong th:text="${s.user.fullName != null ? s.user.fullName : s.user.username}">Khách hàng</strong>
+                                <div class="small text-muted" th:text="${s.user.phone}">0912345678</div>
+                            </td>
+                            <td>
+                                <div class="fw-bold" th:if="${s.vehicle != null}" th:text="${s.vehicle.make + ' ' + s.vehicle.model + ' (' + s.vehicle.year + ')'}">Toyota Vios 2022</div>
+                                <div class="small text-muted" th:if="${s.vehicle != null && s.vehicle.licensePlate != null}" th:text="${'Biển: ' + s.vehicle.licensePlate}">Biển: 30H-123.45</div>
+                            </td>
+                            <td>
+                                <code th:text="${s.vinScanned}">VF8A1XXXXXXXXXXXX</code>
+                            </td>
+                            <td>
+                                <span class="fw-bold text-success" th:if="${s.odoMileage != null}" th:text="${#numbers.formatDecimal(s.odoMileage, 0, 'COMMA', 0, 'POINT') + ' km'}">35.000 km</span>
+                            </td>
+                            <td>
+                                <div class="fw-bold text-primary" th:if="${s.finalPriceVnd != null}" th:text="${#numbers.formatDecimal(s.finalPriceVnd, 0, 'COMMA', 0, 'POINT') + ' đ'}">
+                                    485.000.000 đ
+                                </div>
+                            </td>
+                            <td class="small text-muted" th:text="${#temporals.format(s.createdAt, 'dd/MM/yyyy HH:mm')}">01/01/2026</td>
+                            <td class="text-end pe-4">
+                                <a th:href="@{'/expert/review/' + ${s.id}}" class="btn btn-warning btn-sm fw-bold">
+                                    <i class="bi bi-pencil-square me-1"></i> Giám Định &amp; Duyệt Giá
+                                </a>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="card border-0 shadow-sm rounded-4 p-5 bg-white text-center" th:if="${pendingSessions == null || pendingSessions.isEmpty()}">
+            <i class="bi bi-check2-all display-3 text-success mb-3"></i>
+            <h5 class="fw-bold">Hiện Không Có Hồ Sơ Nào Chờ Thẩm Định</h5>
+            <p class="text-muted col-md-6 mx-auto mb-0">
+                Tất cả các hồ sơ định giá từ khách hàng đã được hoàn tất duyệt hoặc chưa có hồ sơ mới.
+            </p>
+        </div>
+    </div>
+</div>
+</body>
+</html>

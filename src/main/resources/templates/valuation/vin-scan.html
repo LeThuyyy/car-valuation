@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/base :: layout(~{::title}, ~{::#main-content})}">
+<head>
+    <title>Bước 1: Quét Số VIN - Car Valuation AI</title>
+</head>
+<body>
+<div id="main-content">
+    <div class="container py-4">
+        <!-- Wizard Stepper -->
+        <div class="row justify-content-center mb-4">
+            <div class="col-lg-8">
+                <div class="wizard-progress">
+                    <div class="wizard-step active" title="Bước 1: Quét VIN">1</div>
+                    <div class="wizard-step" title="Bước 2: Thông tin xe">2</div>
+                    <div class="wizard-step" title="Bước 3: Quét ODO">3</div>
+                    <div class="wizard-step" title="Bước 4: Ngoại thất">4</div>
+                    <div class="wizard-step" title="Bước 5: Định giá">5</div>
+                </div>
+                <div class="d-flex justify-content-between text-muted small px-1">
+                    <span class="text-primary fw-bold">1. Quét VIN</span>
+                    <span>2. Thông tin xe</span>
+                    <span>3. Quét ODO</span>
+                    <span>4. Ngoại thất</span>
+                    <span>5. Kết quả</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="row justify-content-center">
+            <div class="col-lg-8">
+                <div class="card border-0 shadow-sm rounded-4 p-4 bg-white mb-4">
+                    <div class="d-flex align-items-center mb-3">
+                        <div class="bg-primary bg-opacity-10 text-primary rounded-circle p-2 me-3">
+                            <i class="bi bi-qr-code-scan fs-4"></i>
+                        </div>
+                        <div>
+                            <h4 class="fw-bold mb-0">Bước 1: Quét Số Khung VIN Bằng Camera</h4>
+                            <small class="text-muted">Quét từ kính chắn gió, trụ cửa lái B-Pillar hoặc tem giấy chứng nhận kiểm định</small>
+                        </div>
+                    </div>
+
+                    <!-- Camera Viewfinder -->
+                    <div class="camera-container mb-3 position-relative text-center">
+                        <video id="vinVideo" class="camera-video" playsinline autoplay muted></video>
+                        <canvas id="vinCanvas" style="display:none;"></canvas>
+                        <div class="camera-overlay">
+                            <div class="camera-target-box">
+                                <span><i class="bi bi-viewfinder me-1"></i> CĂN CHỈNH SỐ VIN VÀO KHUNG</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Camera Controls -->
+                    <div class="d-flex flex-wrap justify-content-center gap-2 mb-3">
+                        <button type="button" class="btn btn-outline-secondary btn-sm" id="btnToggleCam">
+                            <i class="bi bi-camera-video me-1"></i> Bật / Tắt Camera
+                        </button>
+                        <button type="button" class="btn btn-primary btn-sm fw-bold px-3" id="btnCaptureVin">
+                            <i class="bi bi-camera me-1"></i> Chụp &amp; Nhận Diện AI
+                        </button>
+                        <button type="button" class="btn btn-outline-secondary btn-sm" id="btnSwitchCam">
+                            <i class="bi bi-arrow-repeat me-1"></i> Đổi Camera
+                        </button>
+                    </div>
+
+                    <!-- Fallback file upload -->
+                    <div class="p-3 bg-light rounded-3 mb-4 text-center">
+                        <label for="vinFileInput" class="form-label small fw-semibold text-muted mb-1">
+                            <i class="bi bi-cloud-arrow-up me-1"></i> Hoặc tải ảnh số VIN / Tem đăng kiểm từ máy:
+                        </label>
+                        <input type="file" class="form-control form-control-sm mx-auto" id="vinFileInput" accept="image/*" style="max-width: 400px;">
+                    </div>
+
+                    <!-- OCR Loading Indicator -->
+                    <div id="vinLoading" class="alert alert-info py-2 text-center" style="display:none;">
+                        <div class="spinner-border spinner-border-sm me-2" role="status"></div>
+                        <span>Gemini Vision AI đang đọc số VIN và giải mã tiêu chuẩn ISO 3779...</span>
+                    </div>
+
+                    <!-- Form xác nhận số VIN -->
+                    <form th:action="@{'/valuation/' + ${session.id} + '/vin'}" method="post" id="vinForm">
+                        <div class="mb-3">
+                            <label for="vinInput" class="form-label fw-bold">
+                                Số Khung (VIN) Xác Nhận <span class="badge bg-secondary ms-1">17 Ký Tự</span>
+                            </label>
+                            <div class="input-group input-group-lg">
+                                <span class="input-group-text bg-white"><i class="bi bi-upc-scan text-primary"></i></span>
+                                <input type="text" class="form-control text-uppercase font-monospace fw-bold" id="vinInput" name="vin"
+                                       th:value="${session.vinScanned}" maxlength="17" placeholder="Ví dụ: VF8A1XXXXXXXXXXXX" required>
+                                <button type="button" class="btn btn-outline-primary" id="btnVerifyVin">
+                                    <i class="bi bi-check-lg me-1"></i> Giải Mã VIN
+                                </button>
+                            </div>
+                            <div id="vinValidationMessage" class="small mt-1"></div>
+                        </div>
+
+                        <!-- Live Decoded Info Card -->
+                        <div id="vinDecodedCard" class="card bg-light border-0 p-3 mb-4 rounded-3" style="display:none;">
+                            <h6 class="fw-bold text-success mb-2"><i class="bi bi-check-circle-fill me-1"></i> Kết Quả Giải Mã Sơ Bộ:</h6>
+                            <div class="row g-2 small">
+                                <div class="col-6 col-md-3"><strong>Hãng xe:</strong> <span id="resMake" class="text-primary">-</span></div>
+                                <div class="col-6 col-md-3"><strong>Mẫu xe:</strong> <span id="resModel" class="text-primary">-</span></div>
+                                <div class="col-6 col-md-3"><strong>Năm SX:</strong> <span id="resYear" class="text-primary">-</span></div>
+                                <div class="col-6 col-md-3"><strong>Xuất xứ:</strong> <span id="resOrigin" class="text-primary">-</span></div>
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-between align-items-center pt-3 border-top">
+                            <a th:href="@{/}" class="btn btn-outline-secondary">
+                                <i class="bi bi-arrow-left me-1"></i> Hủy
+                            </a>
+                            <button type="submit" class="btn btn-warning btn-lg fw-bold px-4 shadow">
+                                Tiếp Tục Bước 2 <i class="bi bi-arrow-right ms-1"></i>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    let carCam = null;
+    let cameraActive = false;
+    const video = document.getElementById("vinVideo");
+    const canvas = document.getElementById("vinCanvas");
+    const vinInput = document.getElementById("vinInput");
+    const vinLoading = document.getElementById("vinLoading");
+    const vinMsg = document.getElementById("vinValidationMessage");
+    const decodedCard = document.getElementById("vinDecodedCard");
+
+    try {
+        carCam = new CarCamera("vinVideo", "vinCanvas");
+    } catch(e) {
+        console.warn("Camera init warning", e);
+    }
+
+    const btnToggle = document.getElementById("btnToggleCam");
+    if (btnToggle && carCam) {
+        btnToggle.addEventListener("click", async () => {
+            if (!cameraActive) {
+                try {
+                    await carCam.startCamera();
+                    cameraActive = true;
+                    btnToggle.innerHTML = '<i class="bi bi-camera-video-off me-1"></i> Tắt Camera';
+                } catch(err) {
+                    alert(err.message || "Không thể bật camera");
+                }
+            } else {
+                carCam.stopCamera();
+                cameraActive = false;
+                btnToggle.innerHTML = '<i class="bi bi-camera-video me-1"></i> Bật Camera';
+            }
+        });
+    }
+
+    const btnSwitch = document.getElementById("btnSwitchCam");
+    if (btnSwitch && carCam) {
+        btnSwitch.addEventListener("click", async () => {
+            if (cameraActive) {
+                await carCam.switchCamera();
+            }
+        });
+    }
+
+    // Chụp và gửi AI OCR
+    const btnCapture = document.getElementById("btnCaptureVin");
+    if (btnCapture && carCam) {
+        btnCapture.addEventListener("click", async () => {
+            if (!cameraActive) {
+                alert("Vui lòng nhấn 'Bật Camera' trước khi chụp!");
+                return;
+            }
+            try {
+                const base64Img = carCam.captureBase64();
+                scanVinImage(base64Img);
+            } catch(e) {
+                alert("Lỗi chụp ảnh: " + e.message);
+            }
+        });
+    }
+
+    // Tải ảnh từ máy
+    const fileInput = document.getElementById("vinFileInput");
+    if (fileInput) {
+        fileInput.addEventListener("change", async (e) => {
+            if (e.target.files && e.target.files[0]) {
+                const base64Img = await readFileAsBase64(e.target.files[0]);
+                scanVinImage(base64Img);
+            }
+        });
+    }
+
+    async function scanVinImage(base64Data) {
+        vinLoading.style.display = "block";
+        vinMsg.innerHTML = "";
+        try {
+            const resp = await fetch("/api/vin/scan", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ imageBase64: base64Data })
+            });
+            const data = await resp.json();
+            vinLoading.style.display = "none";
+
+            if (data.success && data.data && data.data.vin) {
+                vinInput.value = data.data.vin;
+                showDecodedInfo(data.data);
+                vinMsg.innerHTML = '<span class="text-success fw-bold"><i class="bi bi-check-circle"></i> AI đã nhận diện thành công số VIN!</span>';
+            } else {
+                vinMsg.innerHTML = '<span class="text-warning"><i class="bi bi-exclamation-triangle"></i> ' + (data.message || 'Không thể đọc rõ số VIN. Vui lòng thử lại hoặc nhập tay.') + '</span>';
+            }
+        } catch(err) {
+            vinLoading.style.display = "none";
+            vinMsg.innerHTML = '<span class="text-danger"><i class="bi bi-x-circle"></i> Lỗi kết nối dịch vụ AI. Vui lòng nhập số VIN thủ công.</span>';
+        }
+    }
+
+    // Nút giải mã VIN khi nhập tay
+    const btnVerify = document.getElementById("btnVerifyVin");
+    if (btnVerify) {
+        btnVerify.addEventListener("click", async () => {
+            const vin = vinInput.value.trim().toUpperCase();
+            if (vin.length !== 17) {
+                vinMsg.innerHTML = '<span class="text-danger">Số VIN phải có độ dài đúng 17 ký tự (chuẩn ISO 3779).</span>';
+                return;
+            }
+            vinLoading.style.display = "block";
+            try {
+                const resp = await fetch("/api/vin/decode?vin=" + encodeURIComponent(vin));
+                const data = await resp.json();
+                vinLoading.style.display = "none";
+                if (data.success && data.data) {
+                    showDecodedInfo(data.data);
+                    vinMsg.innerHTML = '<span class="text-success"><i class="bi bi-check-circle"></i> Giải mã số VIN thành công!</span>';
+                }
+            } catch(e) {
+                vinLoading.style.display = "none";
+            }
+        });
+    }
+
+    function showDecodedInfo(decoded) {
+        decodedCard.style.display = "block";
+        document.getElementById("resMake").textContent = decoded.make || "Đang xác định";
+        document.getElementById("resModel").textContent = decoded.model || "Đang xác định";
+        document.getElementById("resYear").textContent = decoded.year || "Đang xác định";
+        document.getElementById("resOrigin").textContent = decoded.origin || "Việt Nam";
+    }
+});
+</script>
+</body>
+</html>

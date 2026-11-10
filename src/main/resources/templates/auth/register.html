@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/base :: layout(~{::title}, ~{::#main-content})}">
+<head>
+    <title>Đăng ký tài khoản - Car Valuation AI</title>
+</head>
+<body>
+<div id="main-content">
+    <div class="container py-5">
+        <div class="row justify-content-center">
+            <div class="col-md-7 col-lg-6">
+                <div class="card border-0 shadow-lg rounded-4 p-4 p-md-5 bg-white">
+                    <div class="text-center mb-4">
+                        <div class="bg-success bg-opacity-10 text-success rounded-circle d-inline-flex p-3 mb-2">
+                            <i class="bi bi-person-plus fs-2"></i>
+                        </div>
+                        <h3 class="fw-bold">Đăng Ký Tài Khoản</h3>
+                        <p class="text-muted small">Tạo tài khoản khách hàng để lưu trữ và quản lý các hồ sơ định giá</p>
+                    </div>
+
+                    <form th:action="@{/register}" th:object="${registerDto}" method="post">
+                        <div class="mb-3">
+                            <label for="username" class="form-label fw-semibold">Tên đăng nhập <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" th:field="*{username}" id="username" placeholder="Ví dụ: nguyenvana" required>
+                            <div class="text-danger small mt-1" th:if="${#fields.hasErrors('username')}" th:errors="*{username}"></div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="email" class="form-label fw-semibold">Địa chỉ Email <span class="text-danger">*</span></label>
+                            <input type="email" class="form-control" th:field="*{email}" id="email" placeholder="email@example.com" required>
+                            <div class="text-danger small mt-1" th:if="${#fields.hasErrors('email')}" th:errors="*{email}"></div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="fullName" class="form-label fw-semibold">Họ và tên</label>
+                                <input type="text" class="form-control" th:field="*{fullName}" id="fullName" placeholder="Nguyễn Văn A">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="phone" class="form-label fw-semibold">Số điện thoại</label>
+                                <input type="tel" class="form-control" th:field="*{phone}" id="phone" placeholder="0912345678">
+                            </div>
+                        </div>
+
+                        <div class="mb-4">
+                            <label for="password" class="form-label fw-semibold">Mật khẩu <span class="text-danger">*</span></label>
+                            <input type="password" class="form-control" th:field="*{password}" id="password" placeholder="Tối thiểu 6 ký tự" required>
+                            <div class="text-danger small mt-1" th:if="${#fields.hasErrors('password')}" th:errors="*{password}"></div>
+                        </div>
+
+                        <div class="alert alert-info py-2 px-3 small mb-4">
+                            <i class="bi bi-shield-check me-1"></i> Tài khoản tự đăng ký được cấp quyền <strong>Khách hàng (USER)</strong>. Quyền Chuyên gia (EXPERT) và Admin do quản trị viên cấp phát.
+                        </div>
+
+                        <button type="submit" class="btn btn-success w-100 py-2 fw-bold shadow-sm">
+                            <i class="bi bi-check-circle me-1"></i> Hoàn Tất Đăng Ký
+                        </button>
+                    </form>
+
+                    <div class="mt-4 pt-3 border-top text-center">
+                        <span class="small text-muted">Đã có tài khoản? </span>
+                        <a th:href="@{/login}" class="text-primary fw-semibold small">Đăng nhập ngay</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+</html>

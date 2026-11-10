@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/base :: layout(~{::title}, ~{::#main-content})}">
+<head>
+    <title>Bước 2: Xác Nhận Thông Tin Xe - Car Valuation AI</title>
+</head>
+<body>
+<div id="main-content">
+    <div class="container py-4">
+        <!-- Wizard Stepper -->
+        <div class="row justify-content-center mb-4">
+            <div class="col-lg-8">
+                <div class="wizard-progress">
+                    <div class="wizard-step completed" title="Bước 1: Quét VIN"><i class="bi bi-check"></i></div>
+                    <div class="wizard-step active" title="Bước 2: Thông tin xe">2</div>
+                    <div class="wizard-step" title="Bước 3: Quét ODO">3</div>
+                    <div class="wizard-step" title="Bước 4: Ngoại thất">4</div>
+                    <div class="wizard-step" title="Bước 5: Định giá">5</div>
+                </div>
+                <div class="d-flex justify-content-between text-muted small px-1">
+                    <span class="text-success fw-bold">1. Quét VIN</span>
+                    <span class="text-primary fw-bold">2. Thông tin xe</span>
+                    <span>3. Quét ODO</span>
+                    <span>4. Ngoại thất</span>
+                    <span>5. Kết quả</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="row justify-content-center">
+            <div class="col-lg-8">
+                <div class="card border-0 shadow-sm rounded-4 p-4 bg-white mb-4">
+                    <div class="d-flex align-items-center mb-3">
+                        <div class="bg-success bg-opacity-10 text-success rounded-circle p-2 me-3">
+                            <i class="bi bi-car-front fs-4"></i>
+                        </div>
+                        <div>
+                            <h4 class="fw-bold mb-0">Bước 2: Xác Nhận &amp; Bổ Sung Thông Số Xe</h4>
+                            <small class="text-muted">Kiểm tra lại thông tin giải mã từ VIN và điều chỉnh phiên bản nếu cần thiết</small>
+                        </div>
+                    </div>
+
+                    <form th:action="@{'/valuation/' + ${session.id} + '/vehicle'}" th:object="${vehicle}" method="post">
+                        <!-- Số VIN & Biển số -->
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-7">
+                                <label for="vin" class="form-label fw-bold">Số Khung (VIN)</label>
+                                <input type="text" class="form-control font-monospace bg-light" th:field="*{vin}" id="vin" readonly>
+                            </div>
+                            <div class="col-md-5">
+                                <label for="licensePlate" class="form-label fw-bold">Biển Số Xe (Nếu có)</label>
+                                <input type="text" class="form-control text-uppercase" th:field="*{licensePlate}" id="licensePlate" placeholder="Ví dụ: 30H-888.88">
+                            </div>
+                        </div>
+
+                        <!-- Hãng & Mẫu & Năm -->
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-4">
+                                <label for="make" class="form-label fw-bold">Hãng Xe <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" th:field="*{make}" id="make" placeholder="Ví dụ: Toyota, VinFast" required>
+                            </div>
+                            <div class="col-md-4">
+                                <label for="model" class="form-label fw-bold">Dòng Xe (Model) <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" th:field="*{model}" id="model" placeholder="Ví dụ: Vios, VF8" required>
+                            </div>
+                            <div class="col-md-4">
+                                <label for="year" class="form-label fw-bold">Năm Sản Xuất <span class="text-danger">*</span></label>
+                                <select class="form-select" th:field="*{year}" id="year" required>
+                                    <option th:each="y : ${#numbers.sequence(2026, 2010)}" th:value="${y}" th:text="${y}"></option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Phiên bản & Kiểu dáng & Hộp số -->
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-4">
+                                <label for="trim" class="form-label fw-semibold">Phiên Bản (Trim)</label>
+                                <input type="text" class="form-control" th:field="*{trim}" id="trim" placeholder="Ví dụ: 1.5G CVT, Plus, Premium">
+                            </div>
+                            <div class="col-md-4">
+                                <label for="bodyType" class="form-label fw-semibold">Kiểu Dáng</label>
+                                <select class="form-select" th:field="*{bodyType}" id="bodyType">
+                                    <option value="Sedan">Sedan</option>
+                                    <option value="SUV">SUV</option>
+                                    <option value="Crossover">Crossover</option>
+                                    <option value="Hatchback">Hatchback</option>
+                                    <option value="MPV">MPV</option>
+                                    <option value="Pickup">Bán tải (Pickup)</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label for="transmission" class="form-label fw-semibold">Hộp Số</label>
+                                <select class="form-select" th:field="*{transmission}" id="transmission">
+                                    <option value="Tự động">Số tự động (AT / CVT)</option>
+                                    <option value="Số sàn">Số sàn (MT)</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Nhiên liệu & Xuất xứ & Màu sắc -->
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-4">
+                                <label for="fuelType" class="form-label fw-semibold">Nhiên Liệu</label>
+                                <select class="form-select" th:field="*{fuelType}" id="fuelType">
+                                    <option value="Xăng">Xăng</option>
+                                    <option value="Dầu Diesel">Dầu Diesel</option>
+                                    <option value="Điện">Thuần điện (EV)</option>
+                                    <option value="Hybrid">Xăng lai điện (Hybrid)</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label for="origin" class="form-label fw-semibold">Nguồn Gốc / Xuất Xứ</label>
+                                <select class="form-select" th:field="*{origin}" id="origin">
+                                    <option value="Trong nước">Lắp ráp trong nước (CKD)</option>
+                                    <option value="Nhập khẩu">Nhập khẩu nguyên chiếc (CBU)</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label for="color" class="form-label fw-semibold">Màu Sơn Ngoại Thất</label>
+                                <input type="text" class="form-control" th:field="*{color}" id="color" placeholder="Trắng, Đen, Đỏ, Bạc...">
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-between align-items-center pt-3 border-top">
+                            <a th:href="@{'/valuation/' + ${session.id} + '/vin'}" class="btn btn-outline-secondary">
+                                <i class="bi bi-arrow-left me-1"></i> Quay Lại Bước 1
+                            </a>
+                            <button type="submit" class="btn btn-warning btn-lg fw-bold px-4 shadow">
+                                Tiếp Tục Bước 3 (Quét ODO) <i class="bi bi-arrow-right ms-1"></i>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+</html>

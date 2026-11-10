@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/base :: layout(~{::title}, ~{::#main-content})}">
+<head>
+    <title>Quản Lý Người Dùng &amp; Phân Quyền - Car Valuation AI</title>
+</head>
+<body>
+<div id="main-content">
+    <div class="container py-4">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <a th:href="@{/admin/dashboard}" class="text-decoration-none text-muted small"><i class="bi bi-arrow-left me-1"></i>Về Dashboard Admin</a>
+                <h3 class="fw-bold mb-0 mt-1"><i class="bi bi-people-fill text-danger me-2"></i> Quản Lý Tài Khoản &amp; Phân Quyền RBAC</h3>
+                <small class="text-muted">Cấp phát quyền USER (Khách hàng), EXPERT (Chuyên gia thẩm định), ADMIN (Quản trị viên)</small>
+            </div>
+            <div>
+                <span class="badge bg-secondary fs-6 px-3 py-2">
+                    Tổng: <strong th:text="${users != null ? users.size() : 0}">0</strong> tài khoản
+                </span>
+            </div>
+        </div>
+
+        <div class="card border-0 shadow-sm rounded-4 bg-white overflow-hidden">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th class="ps-4">ID</th>
+                            <th>Tài Khoản</th>
+                            <th>Họ và Tên</th>
+                            <th>Email &amp; Điện Thoại</th>
+                            <th>Vai Trò (Role)</th>
+                            <th>Trạng Thái</th>
+                            <th>Ngày Tạo</th>
+                            <th class="text-end pe-4">Cập Nhật Vai Trò</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:each="u : ${users}">
+                            <td class="ps-4 fw-bold">#<span th:text="${u.id}">1</span></td>
+                            <td>
+                                <strong th:text="${u.username}">username</strong>
+                            </td>
+                            <td th:text="${u.fullName != null ? u.fullName : '-'}">Nguyễn Văn A</td>
+                            <td>
+                                <div><i class="bi bi-envelope me-1 text-muted small"></i><span th:text="${u.email}">email@example.com</span></div>
+                                <div class="small text-muted" th:if="${u.phone != null}"><i class="bi bi-telephone me-1"></i><span th:text="${u.phone}">0912345678</span></div>
+                            </td>
+                            <td>
+                                <span class="badge bg-danger" th:if="${u.role.name() == 'ADMIN'}">ADMIN</span>
+                                <span class="badge bg-info text-dark" th:if="${u.role.name() == 'EXPERT'}">EXPERT</span>
+                                <span class="badge bg-secondary" th:if="${u.role.name() == 'USER'}">USER</span>
+                            </td>
+                            <td>
+                                <span class="badge bg-success-subtle text-success border border-success-subtle" th:if="${u.enabled}">Hoạt động</span>
+                                <span class="badge bg-danger-subtle text-danger border border-danger-subtle" th:if="${!u.enabled}">Đã khóa</span>
+                            </td>
+                            <td class="small text-muted" th:text="${#temporals.format(u.createdAt, 'dd/MM/yyyy')}">01/01/2026</td>
+                            <td class="text-end pe-4">
+                                <div class="d-flex justify-content-end gap-1">
+                                    <!-- Form đổi role -->
+                                    <form th:action="@{'/admin/users/' + ${u.id} + '/role'}" method="post" class="d-inline-flex gap-1">
+                                        <select name="role" class="form-select form-select-sm" style="width: 110px;">
+                                            <option th:each="r : ${roles}" th:value="${r}" th:text="${r}" th:selected="${r == u.role}"></option>
+                                        </select>
+                                        <button type="submit" class="btn btn-outline-primary btn-sm" title="Lưu vai trò">
+                                            <i class="bi bi-check-lg"></i>
+                                        </button>
+                                    </form>
+
+                                    <!-- Form toggle active/inactive -->
+                                    <form th:action="@{'/admin/users/' + ${u.id} + '/toggle-status'}" method="post" class="d-inline">
+                                        <button type="submit" class="btn btn-sm" th:classappend="${u.enabled ? 'btn-outline-danger' : 'btn-outline-success'}"
+                                                th:title="${u.enabled ? 'Khóa tài khoản' : 'Mở khóa tài khoản'}">
+                                            <i class="bi" th:classappend="${u.enabled ? 'bi-lock' : 'bi-unlock'}"></i>
+                                        </button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+</html>

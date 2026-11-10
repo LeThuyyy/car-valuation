@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/base :: layout(~{::title}, ~{::#main-content})}">
+<head>
+    <title>Giới thiệu - Car Valuation AI</title>
+</head>
+<body>
+<div id="main-content">
+    <div class="container py-5">
+        <div class="text-center mb-5">
+            <span class="badge bg-primary-subtle text-primary fw-semibold px-3 py-2 rounded-pill">KIẾN TRÚC &amp; CÔNG NGHỆ</span>
+            <h1 class="fw-bold mt-2">Dự Án Car Valuation AI</h1>
+            <p class="text-muted col-lg-8 mx-auto">
+                Dự án xây dựng nền tảng định giá xe ô tô đã qua sử dụng, áp dụng kiến trúc Modular Monolith hiện đại trong Java 21, Spring Boot 3 và Google Gemini AI.
+            </p>
+        </div>
+
+        <div class="row g-4 mb-5">
+            <div class="col-md-6">
+                <div class="card h-100 shadow-sm border-0 rounded-4 p-4">
+                    <h4 class="fw-bold text-primary mb-3"><i class="bi bi-cpu me-2"></i>Công Nghệ Sử Dụng</h4>
+                    <ul class="list-group list-group-flush">
+                        <li class="list-group-item px-0"><strong>Backend:</strong> Java 21 LTS, Spring Boot 3.3.5, Spring Security 6 (BCrypt, Session Auth, RBAC)</li>
+                        <li class="list-group-item px-0"><strong>Database:</strong> H2 In-Memory (chạy ngay không cần cài đặt) &amp; MySQL 8.x (môi trường sản xuất)</li>
+                        <li class="list-group-item px-0"><strong>Frontend:</strong> Thymeleaf, Bootstrap 5.3, Bootstrap Icons, WebRTC Camera API (JavaScript Canvas)</li>
+                        <li class="list-group-item px-0"><strong>Trí tuệ nhân tạo (AI):</strong> Google Gemini 1.5 Flash (Vision &amp; Multimodal) + Smart Mock fallback khi không có API Key</li>
+                        <li class="list-group-item px-0"><strong>Dữ liệu &amp; API Ngoại vi:</strong> NHTSA vPIC VIN API &amp; Bộ giải mã thị trường Việt Nam (VinFast, THACO, Toyota, Hyundai, Mazda,...)</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="col-md-6">
+                <div class="card h-100 shadow-sm border-0 rounded-4 p-4">
+                    <h4 class="fw-bold text-success mb-3"><i class="bi bi-shield-check me-2"></i>Tính Năng &amp; Tiêu Chuẩn</h4>
+                    <ul class="list-group list-group-flush">
+                        <li class="list-group-item px-0"><strong>Tiêu chuẩn số khung ISO 3779:</strong> Xác thực 17 ký tự, thuật toán Check Digit (ký tự thứ 9) theo trọng số Modulo 11</li>
+                        <li class="list-group-item px-0"><strong>OCR Odometer:</strong> Đọc chỉ số km thực tế từ cụm đồng hồ táp-lô qua Gemini Vision</li>
+                        <li class="list-group-item px-0"><strong>Nhận diện xước móp:</strong> Phân loại SCRATCH, DENT, CRACK, PAINT_CHIP theo mức độ kèm tiền khấu trừ</li>
+                        <li class="list-group-item px-0"><strong>Định giá đa tầng:</strong> Base price theo năm khấu hao &plusmn; ODO (13.500 km/năm) - chi phí sửa ngoại thất &plusmn; điểm lịch sử bảo dưỡng</li>
+                        <li class="list-group-item px-0"><strong>Quy trình phân quyền:</strong> Khách hàng (USER) định giá &bull; Chuyên gia (EXPERT) thẩm định &bull; Quản trị viên (ADMIN) cấu hình</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Cam kết tính minh bạch -->
+        <div class="alert alert-warning border-warning p-4 rounded-4 shadow-sm">
+            <h5 class="fw-bold text-dark mb-2"><i class="bi bi-exclamation-triangle-fill text-warning me-2"></i>Tuyên Bố Miễn Trừ &amp; Minh Bạch AI</h5>
+            <p class="mb-0 text-secondary">
+                Hệ thống chỉ đánh giá các dấu hiệu quan sát được trên bề mặt ngoại thất từ ảnh chụp. Kết quả của AI không kết luận về tai nạn đâm đụng khung gầm nặng, bổ máy hay ngập nước (thủy kích) vì những hư hỏng đó cần chuyên gia kiểm tra trực tiếp bằng máy móc chuyên dụng tại xưởng.
+            </p>
+        </div>
+    </div>
+</div>
+</body>
+</html>

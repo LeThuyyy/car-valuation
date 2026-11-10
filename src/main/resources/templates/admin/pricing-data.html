@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/base :: layout(~{::title}, ~{::#main-content})}">
+<head>
+    <title>Quản Lý Giá Xe Tham Khảo - Car Valuation AI</title>
+</head>
+<body>
+<div id="main-content">
+    <div class="container py-4">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <a th:href="@{/admin/dashboard}" class="text-decoration-none text-muted small"><i class="bi bi-arrow-left me-1"></i>Về Dashboard Admin</a>
+                <h3 class="fw-bold mb-0 mt-1"><i class="bi bi-database-check text-success me-2"></i> Dữ Liệu Giá Xe Tham Khảo (Pricing Engine)</h3>
+                <small class="text-muted">Các mức giá cơ sở theo hãng, dòng xe, năm sản xuất để thuật toán định giá làm căn cứ</small>
+            </div>
+            <button type="button" class="btn btn-success fw-bold shadow-sm" data-bs-toggle="modal" data-bs-target="#addPriceModal">
+                <i class="bi bi-plus-circle me-1"></i> Thêm Mẫu Xe Mới
+            </button>
+        </div>
+
+        <div class="card border-0 shadow-sm rounded-4 bg-white overflow-hidden">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th class="ps-4">ID</th>
+                            <th>Hãng Xe</th>
+                            <th>Dòng Xe (Model)</th>
+                            <th>Năm SX</th>
+                            <th>Phiên Bản (Trim)</th>
+                            <th>Giá Mua Mới (VNĐ)</th>
+                            <th>Giá Cũ Cơ Sở (VNĐ)</th>
+                            <th>Tỷ Lệ Khấu Hao/Năm</th>
+                            <th class="text-end pe-4">Thao Tác</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:each="p : ${prices}">
+                            <td class="ps-4 fw-bold">#<span th:text="${p.id}">1</span></td>
+                            <td><strong class="text-primary" th:text="${p.make}">VinFast</strong></td>
+                            <td class="fw-bold" th:text="${p.model}">VF8</td>
+                            <td><span class="badge bg-light text-dark border" th:text="${p.year}">2023</span></td>
+                            <td th:text="${p.trim != null ? p.trim : 'Tiêu chuẩn'}">Plus</td>
+                            <td>
+                                <span th:if="${p.originalNewPriceVnd != null}" th:text="${#numbers.formatDecimal(p.originalNewPriceVnd, 0, 'COMMA', 0, 'POINT') + ' đ'}">1.250.000.000 đ</span>
+                                <span class="text-muted small" th:if="${p.originalNewPriceVnd == null}">-</span>
+                            </td>
+                            <td>
+                                <strong class="text-success" th:text="${#numbers.formatDecimal(p.baseUsedPriceVnd, 0, 'COMMA', 0, 'POINT') + ' đ'}">950.000.000 đ</strong>
+                            </td>
+                            <td>
+                                <span class="badge bg-secondary" th:text="${#numbers.formatPercent(p.depreciationPerYearRate != null ? p.depreciationPerYearRate : 0.08, 1, 1)}">8.0%</span>
+                            </td>
+                            <td class="text-end pe-4">
+                                <form th:action="@{'/admin/pricing-data/' + ${p.id} + '/delete'}" method="post" class="d-inline"
+                                      onsubmit="return confirm('Bạn có chắc chắn muốn xóa mẫu xe này?');">
+                                    <button type="submit" class="btn btn-outline-danger btn-sm" title="Xóa">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Thêm Mẫu Giá Xe Mới -->
+    <div class="modal fade" id="addPriceModal" tabindex="-1" aria-labelledby="modalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content rounded-4 border-0 shadow">
+                <form th:action="@{/admin/pricing-data}" th:object="${newPrice}" method="post">
+                    <div class="modal-header border-0 pb-0">
+                        <h5 class="modal-title fw-bold" id="modalLabel"><i class="bi bi-plus-circle text-success me-2"></i>Thêm Mức Giá Xe Mới</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label for="m_make" class="form-label fw-semibold">Hãng Xe</label>
+                                <input type="text" class="form-control" th:field="*{make}" id="m_make" placeholder="Ví dụ: VinFast, Toyota" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="m_model" class="form-label fw-semibold">Dòng Xe (Model)</label>
+                                <input type="text" class="form-control" th:field="*{model}" id="m_model" placeholder="Ví dụ: VF3, Vios, CX-5" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="m_year" class="form-label fw-semibold">Năm Sản Xuất</label>
+                                <input type="number" class="form-control" th:field="*{year}" id="m_year" min="2010" max="2026" value="2023" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="m_trim" class="form-label fw-semibold">Phiên Bản (Trim)</label>
+                                <input type="text" class="form-control" th:field="*{trim}" id="m_trim" placeholder="1.5G, Premium, Plus">
+                            </div>
+                            <div class="col-md-6">
+                                <label for="m_orig" class="form-label fw-semibold">Giá Mua Mới (VNĐ)</label>
+                                <input type="number" class="form-control" th:field="*{originalNewPriceVnd}" id="m_orig" step="1000000" placeholder="550000000">
+                            </div>
+                            <div class="col-md-6">
+                                <label for="m_base" class="form-label fw-semibold">Giá Cũ Tiêu Chuẩn (VNĐ) <span class="text-danger">*</span></label>
+                                <input type="number" class="form-control" th:field="*{baseUsedPriceVnd}" id="m_base" step="1000000" placeholder="450000000" required>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer border-0 pt-0">
+                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Hủy</button>
+                        <button type="submit" class="btn btn-success fw-bold px-4">Lưu Dữ Liệu</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+</html>

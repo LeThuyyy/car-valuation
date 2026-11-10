@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/base :: layout(~{::title}, ~{::#main-content})}">
+<head>
+    <title>Bước 3: Quét Đồng Hồ ODO - Car Valuation AI</title>
+</head>
+<body>
+<div id="main-content">
+    <div class="container py-4">
+        <!-- Wizard Stepper -->
+        <div class="row justify-content-center mb-4">
+            <div class="col-lg-8">
+                <div class="wizard-progress">
+                    <div class="wizard-step completed" title="Bước 1: Quét VIN"><i class="bi bi-check"></i></div>
+                    <div class="wizard-step completed" title="Bước 2: Thông tin xe"><i class="bi bi-check"></i></div>
+                    <div class="wizard-step active" title="Bước 3: Quét ODO">3</div>
+                    <div class="wizard-step" title="Bước 4: Ngoại thất">4</div>
+                    <div class="wizard-step" title="Bước 5: Định giá">5</div>
+                </div>
+                <div class="d-flex justify-content-between text-muted small px-1">
+                    <span class="text-success fw-bold">1. Quét VIN</span>
+                    <span class="text-success fw-bold">2. Thông tin xe</span>
+                    <span class="text-primary fw-bold">3. Quét ODO</span>
+                    <span>4. Ngoại thất</span>
+                    <span>5. Kết quả</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="row justify-content-center">
+            <div class="col-lg-8">
+                <div class="card border-0 shadow-sm rounded-4 p-4 bg-white mb-4">
+                    <div class="d-flex align-items-center mb-3">
+                        <div class="bg-success bg-opacity-10 text-success rounded-circle p-2 me-3">
+                            <i class="bi bi-speedometer2 fs-4"></i>
+                        </div>
+                        <div>
+                            <h4 class="fw-bold mb-0">Bước 3: Chụp Đồng Hồ Táp-Lô &amp; Đọc Số Km (ODO)</h4>
+                            <small class="text-muted">Chụp cụm đồng hồ táp-lô khi đang bật khóa điện để AI Gemini Vision nhận diện chỉ số km</small>
+                        </div>
+                    </div>
+
+                    <!-- Camera Viewfinder -->
+                    <div class="camera-container mb-3 position-relative text-center">
+                        <video id="odoVideo" class="camera-video" playsinline autoplay muted></video>
+                        <canvas id="odoCanvas" style="display:none;"></canvas>
+                        <div class="camera-overlay">
+                            <div class="camera-target-box odo-box">
+                                <span><i class="bi bi-speedometer me-1"></i> CĂN CHỈNH SỐ KM VÀO KHUNG</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Camera Controls -->
+                    <div class="d-flex flex-wrap justify-content-center gap-2 mb-3">
+                        <button type="button" class="btn btn-outline-secondary btn-sm" id="btnToggleCam">
+                            <i class="bi bi-camera-video me-1"></i> Bật / Tắt Camera
+                        </button>
+                        <button type="button" class="btn btn-success btn-sm fw-bold px-3" id="btnCaptureOdo">
+                            <i class="bi bi-camera me-1"></i> Chụp &amp; Nhận Diện ODO
+                        </button>
+                        <button type="button" class="btn btn-outline-secondary btn-sm" id="btnSwitchCam">
+                            <i class="bi bi-arrow-repeat me-1"></i> Đổi Camera
+                        </button>
+                    </div>
+
+                    <!-- Fallback file upload -->
+                    <div class="p-3 bg-light rounded-3 mb-4 text-center">
+                        <label for="odoFileInput" class="form-label small fw-semibold text-muted mb-1">
+                            <i class="bi bi-cloud-arrow-up me-1"></i> Hoặc tải ảnh chụp đồng hồ táp-lô từ thiết bị:
+                        </label>
+                        <input type="file" class="form-control form-control-sm mx-auto" id="odoFileInput" accept="image/*" style="max-width: 400px;">
+                    </div>
+
+                    <!-- OCR Loading Indicator -->
+                    <div id="odoLoading" class="alert alert-info py-2 text-center" style="display:none;">
+                        <div class="spinner-border spinner-border-sm me-2" role="status"></div>
+                        <span>Gemini Vision AI đang đọc chỉ số công tơ mét ODO...</span>
+                    </div>
+
+                    <!-- Form xác nhận ODO -->
+                    <form th:action="@{'/valuation/' + ${session.id} + '/odo'}" method="post" id="odoForm">
+                        <div class="mb-3">
+                            <label for="mileageInput" class="form-label fw-bold">
+                                Số Km Lăn Bánh Xác Nhận (Km) <span class="badge bg-primary ms-1">ODO</span>
+                            </label>
+                            <div class="input-group input-group-lg">
+                                <span class="input-group-text bg-white"><i class="bi bi-speedometer2 text-success"></i></span>
+                                <input type="number" class="form-control fw-bold fs-4 text-end" id="mileageInput" name="mileage"
+                                       th:value="${session.odoMileage != null ? session.odoMileage : 35000}" min="0" max="1000000" step="100" required>
+                                <span class="input-group-text bg-light fw-bold">km</span>
+                            </div>
+                            <div id="odoStatusMessage" class="small mt-2"></div>
+                        </div>
+
+                        <!-- Thông tin xe đang định giá -->
+                        <div class="p-3 bg-light rounded-3 mb-4 small text-secondary" th:if="${session.vehicle != null}">
+                            <i class="bi bi-info-circle me-1 text-primary"></i> Xe đang định giá:
+                            <strong th:text="${session.vehicle.make + ' ' + session.vehicle.model + ' (' + session.vehicle.year + ')'}">Toyota Vios 2022</strong>
+                            &bull; Chuẩn xe gia đình: ~13.500 km/năm.
+                        </div>
+
+                        <div class="d-flex justify-content-between align-items-center pt-3 border-top">
+                            <a th:href="@{'/valuation/' + ${session.id} + '/vehicle'}" class="btn btn-outline-secondary">
+                                <i class="bi bi-arrow-left me-1"></i> Quay Lại Bước 2
+                            </a>
+                            <button type="submit" class="btn btn-warning btn-lg fw-bold px-4 shadow">
+                                Tiếp Tục Bước 4 (Chụp Ngoại Thất) <i class="bi bi-arrow-right ms-1"></i>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    let carCam = null;
+    let cameraActive = false;
+    const mileageInput = document.getElementById("mileageInput");
+    const odoLoading = document.getElementById("odoLoading");
+    const odoStatus = document.getElementById("odoStatusMessage");
+
+    try {
+        carCam = new CarCamera("odoVideo", "odoCanvas");
+    } catch(e) {
+        console.warn("Camera init error", e);
+    }
+
+    const btnToggle = document.getElementById("btnToggleCam");
+    if (btnToggle && carCam) {
+        btnToggle.addEventListener("click", async () => {
+            if (!cameraActive) {
+                try {
+                    await carCam.startCamera();
+                    cameraActive = true;
+                    btnToggle.innerHTML = '<i class="bi bi-camera-video-off me-1"></i> Tắt Camera';
+                } catch(err) {
+                    alert(err.message || "Không thể mở camera");
+                }
+            } else {
+                carCam.stopCamera();
+                cameraActive = false;
+                btnToggle.innerHTML = '<i class="bi bi-camera-video me-1"></i> Bật Camera';
+            }
+        });
+    }
+
+    const btnSwitch = document.getElementById("btnSwitchCam");
+    if (btnSwitch && carCam) {
+        btnSwitch.addEventListener("click", async () => {
+            if (cameraActive) {
+                await carCam.switchCamera();
+            }
+        });
+    }
+
+    const btnCapture = document.getElementById("btnCaptureOdo");
+    if (btnCapture && carCam) {
+        btnCapture.addEventListener("click", async () => {
+            if (!cameraActive) {
+                alert("Vui lòng nhấn 'Bật Camera' trước khi chụp!");
+                return;
+            }
+            try {
+                const base64Img = carCam.captureBase64();
+                scanOdoImage(base64Img);
+            } catch(e) {
+                alert("Lỗi chụp ảnh: " + e.message);
+            }
+        });
+    }
+
+    const fileInput = document.getElementById("odoFileInput");
+    if (fileInput) {
+        fileInput.addEventListener("change", async (e) => {
+            if (e.target.files && e.target.files[0]) {
+                const base64Img = await readFileAsBase64(e.target.files[0]);
+                scanOdoImage(base64Img);
+            }
+        });
+    }
+
+    async function scanOdoImage(base64Data) {
+        odoLoading.style.display = "block";
+        odoStatus.innerHTML = "";
+        try {
+            const resp = await fetch("/api/odo/scan", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ imageBase64: base64Data })
+            });
+            const data = await resp.json();
+            odoLoading.style.display = "none";
+
+            if (data.success && data.data && data.data.mileage) {
+                mileageInput.value = data.data.mileage;
+                odoStatus.innerHTML = '<span class="text-success fw-bold"><i class="bi bi-check-circle"></i> AI đọc thành công: ' + Number(data.data.mileage).toLocaleString('vi-VN') + ' km (Độ tin cậy: ' + Math.round((data.data.confidence || 0.95)*100) + '%)</span>';
+            } else {
+                odoStatus.innerHTML = '<span class="text-warning"><i class="bi bi-exclamation-triangle"></i> ' + (data.message || 'Không đọc rõ số km. Vui lòng đối soát và chỉnh sửa số km trong ô bên dưới.') + '</span>';
+            }
+        } catch(e) {
+            odoLoading.style.display = "none";
+            odoStatus.innerHTML = '<span class="text-danger"><i class="bi bi-x-circle"></i> Lỗi kết nối dịch vụ AI. Bạn có thể nhập số km trực tiếp.</span>';
+        }
+    }
+});
+</script>
+</body>
+</html>
