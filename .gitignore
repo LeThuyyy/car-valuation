@@ -22,6 +22,14 @@ replay_pid*
 uploads/
 uploads/**
 
+# Local secrets and environment overrides
+.env
+.env.*
+!.env.example
+**/application-local.properties
+**/application-local.yml
+**/application-local.yaml
+
 # IDE & Tooling
 .idea/
 *.iml

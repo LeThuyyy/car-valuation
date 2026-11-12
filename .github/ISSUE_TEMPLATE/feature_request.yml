@@ -1,0 +1,27 @@
+name: Đề xuất tính năng
+description: Thảo luận phạm vi và tiêu chí chấp nhận
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Nhu cầu người dùng
+      description: Ai cần thay đổi này và vấn đề hiện tại là gì?
+    validations:
+      required: true
+  - type: textarea
+    id: outcome
+    attributes:
+      label: Kết quả mong đợi
+      description: Mô tả hành vi và tiêu chí nghiệm thu; không chỉ mô tả cách cài đặt.
+    validations:
+      required: true
+  - type: textarea
+    id: scope
+    attributes:
+      label: Phạm vi client / server / dữ liệu
+      description: API, giao diện, schema và quyền truy cập nào có thể bị ảnh hưởng?
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Phương án khác và giới hạn

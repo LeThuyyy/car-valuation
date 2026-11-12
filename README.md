@@ -1,160 +1,85 @@
-# CAR VALUATION AI - NỀN TẢNG ĐỊNH GIÁ XE Ô TÔ THÔNG MINH
+# Car Valuation AI
 
-Hệ thống định giá xe ô tô đã qua sử dụng tích hợp AI (Gemini Vision OCR số khung VIN, ODO và nhận diện xước móp ngoại thất) kết hợp động cơ định giá thị trường viết bằng Java (**Java Pricing Engine**).
+Ứng dụng web hỗ trợ **định giá sơ bộ xe ô tô đã qua sử dụng**: nhận diện VIN và ODO từ ảnh, phân tích dấu hiệu hư hỏng *ngoại thất nhìn thấy được*, tính giá tham khảo theo quy tắc và hỗ trợ chuyên gia rà soát.
 
-Dự án được xây dựng theo kiến trúc **Modular Monolith** trên nền tảng **Java 21**, **Spring Boot 3.3.5**, **Spring Security 6** và **Thymeleaf + Bootstrap 5**.
+> **Trạng thái: MVP đang phát triển — chưa sẵn sàng triển khai công khai hoặc dùng cho quyết định giao dịch.** Kiểm thử hiện có chỉ bao phủ một phần VIN/pricing; luồng trình duyệt và các ranh giới bảo mật vẫn cần hoàn thiện. Không dùng kết quả ảnh để khẳng định tai nạn kết cấu hay ngập nước. Xem [các giới hạn hiện tại](docs/known-limitations.md).
 
----
+## Kiến trúc client–server hiện tại
 
-## 🌟 4 TÍNH NĂNG CỐT LÕI (MANDATORY CORE FEATURES)
+```text
+Trình duyệt (client)
+  ├─ HTML/CSS/JavaScript + Bootstrap, camera WebRTC
+  └─ form và fetch (VIN/ODO/photo)
+              │ HTTP(S)
+              ▼
+Spring Boot (server, Java 21)
+  ├─ Spring MVC + Thymeleaf: render HTML và xử lý wizard
+  ├─ Spring Security: session login, USER / EXPERT / ADMIN
+  ├─ các endpoint /api/**: OCR và phân tích ảnh
+  ├─ pricing engine + lưu trữ ảnh
+  └─ JPA → H2 (demo) hoặc MySQL; Gemini Vision (hoặc mock)
+```
 
-1. **Quét Số VIN Bằng Camera & Giải Mã Chuẩn ISO 3779**:
-   - Chụp ảnh số khung từ kính lái, tem kiểm định hoặc B-pillar bằng WebRTC Browser Camera (`navigator.mediaDevices.getUserMedia`).
-   - Gemini Vision OCR nhận diện chuỗi 17 ký tự, loại bỏ ký tự cấm (I, O, Q), kiểm tra Check Digit (ký tự thứ 9 Modulo 11).
-   - Hệ thống giải mã Composite kết hợp **vPIC NHTSA REST API** và **Nhà cung cấp quy tắc xe nội địa Việt Nam (VinFast, THACO, Toyota, Hyundai, Mazda, Ford, Kia)**.
-   - Người dùng có thể đối soát và chỉnh sửa thông tin trước khi xác nhận.
+**Đây là web client–server dạng server-rendered, chưa phải SPA với frontend và backend triển khai độc lập.** Mã client nằm ở `src/main/resources/templates` và `src/main/resources/static`; mã server nằm ở `src/main/java`. Giữ hai phần trong cùng Spring Boot để dự án vẫn build/chạy được. Nếu nhóm quyết định tách frontend độc lập, cần thiết kế API, xác thực, CSRF/CORS và pipeline riêng trước khi di chuyển file; xem [kiến trúc và hướng phát triển](docs/architecture.md).
 
-2. **OCR Đọc Đồng Hồ Công Tơ Mét (ODO Mileage)**:
-   - Chụp cụm đồng hồ táp-lô khi bật khóa điện.
-   - AI Gemini Vision đọc chỉ số km lăn bánh thực tế.
-   - Chuẩn hóa số nguyên, hiển thị đối soát người dùng trước khi lưu vào CSDL.
+## Cấu trúc repository
 
-3. **AI Kiểm Tra Ngoại Thất & Nhận Diện Xước Móp**:
-   - Tải lên 4 góc ảnh chính (**Trước, Sau, Trái, Phải**) + Ảnh cận cảnh vết xước (tùy chọn).
-   - Gemini Vision phát hiện và phân loại khuyết tật: `SCRATCH` (Xước), `DENT` (Móp/lõm), `CRACK` (Nứt đèn/kính), `PAINT_CHIP` (Tróc sơn) theo các mức độ `LOW`, `MEDIUM`, `HIGH`.
-   - **Cam kết minh bạch**: Hệ thống chỉ đánh giá bề mặt thân vỏ nhìn thấy được từ ảnh, *tuyệt đối không phán xét tai nạn đâm đụng khung gầm nặng hoặc ngập nước/thủy kích*.
+```text
+car-valuation/
+├── .github/
+│   ├── ISSUE_TEMPLATE/      # Báo lỗi và yêu cầu tính năng
+│   ├── workflows/           # CI build và test
+│   └── pull_request_template.md
+├── docs/                    # Kiến trúc và giới hạn đã biết
+├── src/
+│   ├── main/java/com/carvaluation/     # Server: MVC, nghiệp vụ, JPA, bảo mật
+│   ├── main/resources/templates/       # Client: Thymeleaf HTML
+│   ├── main/resources/static/          # Client: CSS, JS camera
+│   └── test/java/com/carvaluation/     # Kiểm thử
+├── pom.xml                   # Maven/Spring Boot 3.3.5, Java 21
+├── CONTRIBUTING.md           # Quy trình làm việc nhóm
+├── SECURITY.md               # Báo cáo lỗ hổng và lưu ý triển khai
+└── CLAUDE.md                 # Hướng dẫn công cụ phát triển (nếu có tại local)
+```
 
-4. **Quản Lý Tài Khoản & Phân Quyền RBAC 3 Cấp**:
-   - **USER (Khách hàng)**: Đăng ký tài khoản, thực hiện định giá xe, quản lý lịch sử định giá của riêng mình.
-   - **EXPERT (Chuyên gia thẩm định)**: Truy cập bàn thẩm định (`/expert/dashboard`), xem hồ sơ và ảnh xe khách hàng tải lên, đối soát và điều chỉnh giá kèm ghi chú thẩm định.
-   - **ADMIN (Quản trị viên)**: Dashboard chỉ số toàn hệ thống, quản lý tài khoản người dùng, cấp phát vai trò RBAC, cập nhật bảng giá xe tham khảo thị trường.
+Các package server chính: `auth`, `vehicle`, `vin`, `mileage`, `damage`, `ai`, `pricing`, `valuation`, `expert`, `admin`, `storage`, `config`. Xem [docs/architecture.md](docs/architecture.md) để biết trách nhiệm và luồng dữ liệu.
 
----
+## Chạy cục bộ
 
-## 🧮 ĐỘNG CƠ ĐỊNH GIÁ JAVA PRICING ENGINE
+Yêu cầu **JDK 21**, **Maven** và trình duyệt hỗ trợ `getUserMedia` (localhost/HTTPS cho camera). Chạy lệnh từ thư mục gốc repository:
 
-Thuật toán định giá 4 lớp độc lập:
-$$\text{Giá Định Giá} = \text{Giá Cơ Sở (Base Price)} \pm \text{Hiệu chỉnh ODO} - \text{Khấu trừ Xước Móp} \pm \text{Điểm Bảng Hỏi Tình Trạng}$$
-
-- **Giá cơ sở**: Tra cứu bảng giá thị trường theo Hãng, Dòng xe, Năm sản xuất và tỷ lệ khấu hao.
-- **Hiệu chỉnh ODO**: So sánh với định mức trung bình **13.500 km/năm**:
-  - Xe chạy ít (xe lướt, giữ gìn): Cộng thưởng giá (tối đa +6%).
-  - Xe chạy nhiều (vượt chuẩn): Giảm trừ giá (tối đa -12%).
-- **Khấu trừ ngoại thất**: Tính toán chi phí phục hồi sơn/gò hàn theo từng vết xước/móp từ báo cáo AI.
-- **Bảng hỏi tình trạng**: Lịch sử bảo dưỡng hãng (Full Service History +2.5%), dàn lốp mới (+4 triệu) hoặc mòn (-6 triệu), thời hạn đăng kiểm còn trên 12 tháng (+2 triệu).
-
----
-
-## 🔑 TÀI KHOẢN MẪU ĐƯỢC NẠP SẴN (PRE-SEEDED ACCOUNTS)
-
-Hệ thống tự động khởi tạo sẵn các tài khoản mẫu khi khởi động:
-
-| Vai Trò | Tên Đăng Nhập | Mật Khẩu | Quyền Hạn |
-|---|---|---|---|
-| **ADMIN** | `admin` | `admin123` | Quản trị toàn hệ thống, quản lý người dùng & giá |
-| **EXPERT** | `expert` | `expert123` | Bàn thẩm định, đối soát và duyệt giá chuyên gia |
-| **USER** | `user` | `user123` | Khách hàng định giá xe và xem lịch sử cá nhân |
-
-*(Khách hàng mới có thể đăng ký tài khoản tự do tại trang `/register`, mặc định nhận quyền `USER`)*.
-
----
-
-## 🚀 HƯỚNG DẪN KHỞI CHẠY (QUICK START)
-
-### Cách 1: Chạy ngay với H2 In-Memory Database (Mặc định - Cắm là chạy)
-
-Không cần cài đặt MySQL, cơ sở dữ liệu H2 sẽ tự động tạo trong bộ nhớ:
-
-```bash
-cd C:\Users\XIAOXIN\Projects\car-valuation
+```sh
+mvn test
 mvn spring-boot:run
 ```
 
-Truy cập ứng dụng tại: **http://localhost:8080**  
-H2 Console: **http://localhost:8080/h2-console** (JDBC URL: `jdbc:h2:mem:carvaldb`, User: `sa`, Password: để trống).
+Mở <http://localhost:8080>. Cấu hình mặc định dùng **H2 in-memory**: dữ liệu trong database mất sau mỗi lần tắt ứng dụng; ảnh lưu trên đĩa theo `app.storage.upload-dir`. `DataInitializer` tạo tài khoản demo khi bảng người dùng trống, kể cả khi bật profile MySQL — **không đưa cấu hình hiện tại lên Internet**. Xem `src/main/java/com/carvaluation/config/DataInitializer.java` để biết seed cục bộ; đổi cách bootstrap và thông tin đăng nhập trước khi triển khai.
 
----
+Để thử MySQL, tạo database `car_valuation_db`, sau đó chỉnh cấu hình local theo `src/main/resources/application-mysql.properties` và chạy:
 
-### Cách 2: Chạy với MySQL (Môi trường sản xuất)
-
-1. Tạo CSDL trong MySQL:
-   ```sql
-   CREATE DATABASE car_valuation_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-   ```
-2. Khởi chạy ứng dụng với profile `mysql`:
-   ```bash
-   mvn spring-boot:run -Dspring-boot.run.profiles=mysql
-   ```
-
----
-
-## 🤖 CẤU HÌNH GOOGLE GEMINI AI KEY
-
-Trong file `src/main/resources/application.properties`:
-```properties
-gemini.api.key=YOUR_GEMINI_API_KEY
-```
-Hoặc thiết lập biến môi trường hệ thống:
-```bash
-set GEMINI_API_KEY=AIzaSy...
+```sh
+mvn spring-boot:run -Dspring-boot.run.profiles=mysql
 ```
 
-> **Chế độ Mock Thông Minh (Offline/Keyless Mode):**  
-> Nếu bạn chưa điền API Key, hệ thống **tự động kích hoạt cơ chế Smart Mock AI**. Bạn vẫn có thể trải nghiệm 100% quy trình từ quét VIN, OCR ODO, phân tích ảnh 4 góc và xuất báo cáo định giá đầy đủ mà không bị gián đoạn!
+**Profile MySQL hiện có mật khẩu hard-code và `ddl-auto=update`; chỉ dùng để thử nghiệm, không phải cấu hình production.** Không commit khóa API hay mật khẩu thật. Biến môi trường `GEMINI_API_KEY` được đọc bởi `application.properties`; không có khóa hợp lệ thì client AI dùng mock, và lỗi gọi Gemini cũng có thể rơi về mock. Mock **không phải** kết quả nhận diện từ ảnh thực tế.
 
----
+## Kiểm thử và cộng tác
 
-## 📁 CẤU TRÚC THƯ MỤC DỰ ÁN
-
-```
-car-valuation/
-├── pom.xml                               # Quản lý thư viện Maven (Java 21, Spring Boot 3.3.5)
-├── README.md                             # Tài liệu hướng dẫn
-├── src/
-│   ├── main/
-│   │   ├── java/com/carvaluation/
-│   │   │   ├── CarValuationApplication.java
-│   │   │   ├── auth/                     # Spring Security, RBAC, User, AuthService
-│   │   │   ├── vehicle/                  # Quản lý hồ sơ kỹ thuật xe
-│   │   │   ├── vin/                      # ISO 3779, NHTSA API & Vietnam Rule Decoder
-│   │   │   ├── mileage/                  # OCR ODO đồng hồ táp-lô
-│   │   │   ├── damage/                   # AI phân tích xước móp ngoại thất & báo cáo
-│   │   │   ├── pricing/                  # Java Rule-Based Pricing Engine 4 lớp
-│   │   │   ├── valuation/                # Session wizard 5 bước, upload ảnh, kết quả
-│   │   │   ├── expert/                   # Bàn thẩm định dành cho chuyên gia
-│   │   │   ├── admin/                    # Dashboard quản trị, User RBAC, Data xe
-│   │   │   ├── ai/                       # Client tích hợp Google Gemini 1.5 Flash
-│   │   │   ├── storage/                  # Lưu trữ file ảnh upload
-│   │   │   ├── config/                   # WebMvc & DataInitializer nạp dữ liệu mẫu
-│   │   │   └── common/                   # ApiResponse wrapper
-│   │   └── resources/
-│   │       ├── application.properties    # Cấu hình H2, Gemini, Uploads
-│   │       ├── application-mysql.properties # Cấu hình MySQL production
-│   │       ├── static/
-│   │       │   ├── css/custom.css        # Giao diện responsive hiện đại
-│   │       │   └── js/camera.js          # WebRTC Camera API & Canvas capture
-│   │       └── templates/                # Thymeleaf HTML Templates
-│   │           ├── layout/base.html      # Layout chuẩn chung
-│   │           ├── index.html            # Trang chủ & giới thiệu tính năng
-│   │           ├── about.html            # Giới thiệu công nghệ & kiến trúc
-│   │           ├── auth/                 # Login, Register, Profile
-│   │           ├── valuation/            # Quy trình định giá 5 bước & Lịch sử
-│   │           ├── expert/               # Dashboard thẩm định & duyệt giá
-│   │           ├── admin/                # Dashboard Admin, quản lý User, giá xe
-│   │           └── error/403.html        # Trang báo lỗi từ chối truy cập
-│   └── test/
-│       └── java/com/carvaluation/
-│           ├── vin/VinValidatorTest.java
-│           └── pricing/PricingStrategyTest.java
+```sh
+mvn compile
+mvn test
+mvn -Dtest=VinValidatorTest test
+mvn package
 ```
 
----
+Nhánh `main` dành cho phát hành; `develop` là nhánh tích hợp. Tạo nhánh tính năng/sửa lỗi từ `develop` và gửi PR về `develop`; PR phát hành đi từ `develop` sang `main`. Workflow GitHub Actions chạy `mvn -B verify` trên JDK 21 cho PR và push vào hai nhánh này. Kiểm thử chạy thành công **không đồng nghĩa** wizard trình duyệt đã hoạt động. Xem [CONTRIBUTING.md](CONTRIBUTING.md) để tạo issue, nhánh và PR; xem [SECURITY.md](SECURITY.md) khi phát hiện lỗ hổng.
 
-## 🛡️ BẢO MẬT & PHÂN QUYỀN URL (SECURITY MATRIX)
+## Phạm vi tính năng
 
-| URL Pattern | Quyền Truy Cập | Mục Đích |
-|---|---|---|
-| `/`, `/about`, `/login`, `/register`, `/css/**`, `/js/**` | `permitAll()` | Trang công khai, khách vãng lai |
-| `/valuation/**`, `/history/**`, `/profile` | `ROLE_USER`, `ROLE_EXPERT`, `ROLE_ADMIN` | Định giá xe và quản lý hồ sơ cá nhân |
-| `/expert/**` | `ROLE_EXPERT`, `ROLE_ADMIN` | Bàn thẩm định và duyệt giá của chuyên gia |
-| `/admin/**` | `ROLE_ADMIN` | Quản trị người dùng và cấu hình giá cơ sở |
+- VIN: ảnh camera/file → Gemini OCR → kiểm tra và giải mã VIN → người dùng xác nhận.
+- ODO: ảnh → OCR → người dùng xác nhận số km.
+- Ngoại thất: ảnh trước/sau/trái/phải và ảnh cận cảnh tùy chọn → phân loại dấu hiệu nhìn thấy được.
+- Định giá: giá tham khảo hoặc khấu hao theo phân khúc, điều chỉnh theo ODO, ngoại thất và bảng hỏi.
+- Tài khoản: đăng nhập session, vai trò người dùng/chuyên gia/quản trị, lịch sử theo chủ hồ sơ.
+
+**Lưu ý:** Đây là phạm vi mã nguồn đã có, không phải cam kết rằng tất cả đường đi end-to-end đã qua kiểm thử. Các lỗi đã biết và thứ tự khắc phục nằm ở [docs/known-limitations.md](docs/known-limitations.md).
