@@ -22,6 +22,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
+import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.time.LocalDateTime;
@@ -38,6 +39,7 @@ import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -176,6 +178,35 @@ class WizardContractTest {
                 .andExpect(content().string(containsString("const sessionId = 7;")));
         mvc.perform(get("/valuation/7/questionnaire").with(user(owner))).andExpect(status().isOk())
                 .andExpect(content().string(containsString("/valuation/7/evaluate")));
+    }
+
+    @Test
+    void exteriorPhotoSlotsUseAcceptedTypesAndUploadBothSides() throws Exception {
+        CustomUserDetails owner = signedIn(1, Role.USER);
+        ValuationSession valuation = session(owner.getUser(), ValuationStatus.DRAFT);
+        when(valuationService.getSessionForUser(7L, owner.getUser())).thenReturn(Optional.of(valuation));
+
+        var page = mvc.perform(get("/valuation/7/photos").with(user(owner)))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+        for (PhotoType type : List.of(PhotoType.FRONT, PhotoType.REAR,
+                PhotoType.LEFT_SIDE, PhotoType.RIGHT_SIDE, PhotoType.CLOSEUP)) {
+            org.junit.jupiter.api.Assertions.assertTrue(page.contains("data-type=\"" + type.name() + "\""),
+                    "Photo slot does not match server enum: " + type);
+        }
+        for (PhotoType type : List.of(PhotoType.LEFT_SIDE, PhotoType.RIGHT_SIDE)) {
+            CarPhoto saved = new CarPhoto(valuation, type, "cars/test.jpg");
+            saved.setId(type == PhotoType.LEFT_SIDE ? 11L : 12L);
+            when(valuationService.uploadAndAnalyzePhoto(eq(7L), eq(type), any(), eq(owner.getUser())))
+                    .thenReturn(saved);
+            mvc.perform(multipart("/valuation/7/photos/upload")
+                            .file(new MockMultipartFile("file", "side.jpg", "image/jpeg", new byte[]{1, 2, 3}))
+                            .param("photoType", type.name())
+                            .with(user(owner)).with(csrf()))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.data.photoType").value(type.name()));
+            verify(valuationService).uploadAndAnalyzePhoto(eq(7L), eq(type), any(), eq(owner.getUser()));
+        }
     }
 
     @Test

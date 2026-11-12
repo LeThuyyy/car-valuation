@@ -78,7 +78,7 @@ public class ValuationController {
         }
 
         // Tự động giải mã VIN để điền sẵn vào xe
-        Vehicle vehicle = session.getVehicle() != null ? session.getVehicle() : new Vehicle();
+        Vehicle vehicle = session.getVehicle() != null ? session.getVehicle() : new Vehicle("Chưa xác định", "Chưa xác định", 2022);
         vehicle.setUser(userDetails.getUser());
         vehicle.setVin(decoded.getVin());
         if (decoded.getMake() != null) vehicle.setMake(decoded.getMake());
@@ -108,10 +108,7 @@ public class ValuationController {
 
         Vehicle vehicle = session.getVehicle();
         if (vehicle == null) {
-            vehicle = new Vehicle();
-            vehicle.setYear(2022);
-            vehicle.setMake("Toyota");
-            vehicle.setModel("Vios");
+            vehicle = new Vehicle("Chưa xác định", "Chưa xác định", 2022);
         }
 
         model.addAttribute("valuation", session);

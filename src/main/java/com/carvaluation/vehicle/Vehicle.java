@@ -19,28 +19,28 @@ public class Vehicle {
     @Column(length = 17)
     private String vin;
 
-    @Column(nullable = false, length = 50)
+    @Column(nullable = false, length = 120)
     private String make;
 
-    @Column(nullable = false, length = 50)
+    @Column(nullable = false, length = 120)
     private String model;
 
     @Column(name = "model_year", nullable = false)
     private Integer year;
 
-    @Column(length = 50)
+    @Column(length = 120)
     private String trim;
 
-    @Column(name = "body_type", length = 30)
+    @Column(name = "body_type", length = 120)
     private String bodyType;
 
-    @Column(length = 30)
+    @Column(length = 120)
     private String transmission; // "Tự động (AT)", "Số sàn (MT)", "CVT"
 
-    @Column(name = "fuel_type", length = 30)
+    @Column(name = "fuel_type", length = 120)
     private String fuelType; // "Xăng", "Dầu (Diesel)", "Điện", "Hybrid"
 
-    @Column(length = 30)
+    @Column(length = 120)
     private String color;
 
     @Column(name = "license_plate", length = 20)
@@ -48,10 +48,10 @@ public class Vehicle {
 
     private Integer mileage; // Số ODO hiện tại (km)
 
-    @Column(length = 50)
+    @Column(length = 120)
     private String engine; // "1.5L", "2.0L Turbo", "Điện 150kW"
 
-    @Column(length = 50)
+    @Column(length = 120)
     private String origin; // "Lắp ráp trong nước (CKD)", "Nhập khẩu nguyên chiếc (CBU)"
 
     @Column(name = "created_at", nullable = false, updatable = false)
