@@ -2,7 +2,7 @@
 
 ## Trạng thái dự án
 
-Đây là MVP phục vụ phát triển/kiểm thử; **không nên triển khai công khai khi chưa khắc phục các vấn đề trong [docs/known-limitations.md](docs/known-limitations.md)**. Tài khoản demo được tạo tự động trên database mới; ảnh upload hiện truy cập được qua `/uploads/**` mà không kiểm tra chủ sở hữu. Cấu hình MySQL mẫu chứa mật khẩu và H2 console đang bật trong cấu hình mặc định.
+Đây là MVP phục vụ phát triển/kiểm thử; **không nên triển khai công khai khi chưa khắc phục các vấn đề trong [docs/known-limitations.md](docs/known-limitations.md)**. Tài khoản demo vẫn được tạo tự động trên database mới. Đường dẫn ảnh công khai `/uploads/**` đã được chặn trong bản sửa luồng ảnh; ảnh phải được đọc qua endpoint kiểm tra quyền. Cấu hình MySQL mẫu chứa mật khẩu và H2 console đang bật trong cấu hình mặc định.
 
 ## Báo cáo vấn đề
 

@@ -19,6 +19,7 @@ import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 @Controller
@@ -153,20 +154,20 @@ public class ValuationController {
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy phiên định giá"));
 
         model.addAttribute("session", session);
-        model.addAttribute("photos", session.getPhotos());
+        model.addAttribute("photos", photoViews(session));
         return "valuation/photos-damage";
     }
 
     @PostMapping("/valuation/{id}/photos/upload")
     @ResponseBody
-    public ResponseEntity<ApiResponse<CarPhoto>> handlePhotoUpload(
+    public ResponseEntity<ApiResponse<PhotoView>> handlePhotoUpload(
             @PathVariable("id") Long id,
             @RequestParam("photoType") PhotoType photoType,
             @RequestParam("file") MultipartFile file,
             @AuthenticationPrincipal CustomUserDetails userDetails) {
         try {
             CarPhoto photo = valuationService.uploadAndAnalyzePhoto(id, photoType, file, userDetails.getUser());
-            return ResponseEntity.ok(ApiResponse.ok("Tải ảnh và phân tích AI thành công", photo));
+            return ResponseEntity.ok(ApiResponse.ok("Tải ảnh và phân tích AI thành công", PhotoView.from(photo)));
         } catch (Exception e) {
             return ResponseEntity.internalServerError().body(ApiResponse.error("Lỗi khi tải ảnh: " + e.getMessage()));
         }
@@ -215,7 +216,7 @@ public class ValuationController {
         model.addAttribute("session", session);
         model.addAttribute("vehicle", session.getVehicle());
         model.addAttribute("aiResult", aiResult);
-        model.addAttribute("photos", session.getPhotos());
+        model.addAttribute("photos", photoViews(session));
 
         return "valuation/result";
     }
@@ -238,5 +239,9 @@ public class ValuationController {
                                   @AuthenticationPrincipal CustomUserDetails userDetails,
                                   Model model) {
         return valuationResult(id, userDetails, model);
+    }
+
+    private List<PhotoView> photoViews(ValuationSession session) {
+        return session.getPhotos().stream().map(PhotoView::from).toList();
     }
 }

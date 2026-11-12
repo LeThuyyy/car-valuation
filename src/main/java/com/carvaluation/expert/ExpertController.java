@@ -3,6 +3,7 @@ package com.carvaluation.expert;
 import com.carvaluation.auth.CustomUserDetails;
 import com.carvaluation.damage.DamageReport;
 import com.carvaluation.pricing.ValuationResult;
+import com.carvaluation.valuation.PhotoView;
 import com.carvaluation.valuation.ValuationSession;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -47,7 +48,7 @@ public class ExpertController {
         model.addAttribute("session", session);
         model.addAttribute("vehicle", session.getVehicle());
         model.addAttribute("aiResult", aiResult);
-        model.addAttribute("photos", session.getPhotos());
+        model.addAttribute("photos", session.getPhotos().stream().map(PhotoView::from).toList());
 
         return "expert/review";
     }

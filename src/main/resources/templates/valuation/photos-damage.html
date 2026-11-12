@@ -152,7 +152,6 @@
             </div>
         </div>
     </div>
-</div>
 
 <script th:inline="javascript">
 document.addEventListener("DOMContentLoaded", function() {
@@ -173,8 +172,11 @@ document.addEventListener("DOMContentLoaded", function() {
             aiAnalyzing.style.display = "block";
 
             try {
+                const csrfToken = document.querySelector('meta[name="_csrf"]')?.content;
+                const csrfHeader = document.querySelector('meta[name="_csrf_header"]')?.content;
                 const resp = await fetch("/valuation/" + sessionId + "/photos/upload", {
                     method: "POST",
+                    headers: csrfToken && csrfHeader ? { [csrfHeader]: csrfToken } : {},
                     body: formData
                 });
                 const data = await resp.json();
@@ -233,5 +235,6 @@ document.addEventListener("DOMContentLoaded", function() {
     });
 });
 </script>
+</div>
 </body>
 </html>

@@ -72,7 +72,7 @@ mvn -Dtest=VinValidatorTest test
 mvn package
 ```
 
-Nhánh `main` dành cho phát hành; `develop` là nhánh tích hợp. Tạo nhánh tính năng/sửa lỗi từ `develop` và gửi PR về `develop`; PR phát hành đi từ `develop` sang `main`. Workflow GitHub Actions chạy `mvn -B verify` trên JDK 21 cho PR và push vào hai nhánh này. Kiểm thử chạy thành công **không đồng nghĩa** wizard trình duyệt đã hoạt động. Xem [CONTRIBUTING.md](CONTRIBUTING.md) để tạo issue, nhánh và PR; xem [SECURITY.md](SECURITY.md) khi phát hiện lỗ hổng.
+Nhánh `main` dành cho phát hành; `develop` là nhánh tích hợp. Tạo nhánh tính năng/sửa lỗi từ `develop` và gửi PR về `develop`; PR phát hành đi từ `develop` sang `main`. Workflow GitHub Actions chạy `mvn -B verify` trên JDK 21 cho PR và push vào hai nhánh này. Các bài test về phân quyền ảnh, DTO và CSRF chỉ xác minh các đường đi được kiểm tra; **chưa chứng minh** toàn bộ wizard trình duyệt đã hoạt động. Xem [CONTRIBUTING.md](CONTRIBUTING.md) để tạo issue, nhánh và PR; xem [SECURITY.md](SECURITY.md) khi phát hiện lỗ hổng.
 
 ## Phạm vi tính năng
 
