@@ -1,5 +1,6 @@
 package com.carvaluation.valuation;
 
+import com.carvaluation.auth.Role;
 import com.carvaluation.auth.User;
 import com.carvaluation.damage.DamageAnalysisService;
 import com.carvaluation.damage.DamageReport;
@@ -60,15 +61,43 @@ public class ValuationService {
         return sessionRepository.findById(sessionId);
     }
 
+    @Transactional(readOnly = true)
+    public Optional<ValuationSession> getSessionForViewer(Long sessionId, User viewer) {
+        if (viewer == null) return Optional.empty();
+        if (viewer.getRole() == Role.EXPERT || viewer.getRole() == Role.ADMIN) {
+            return sessionRepository.findById(sessionId);
+        }
+        return sessionRepository.findByIdAndUserId(sessionId, viewer.getId());
+    }
+
+    @Transactional(readOnly = true)
+    public Optional<CarPhoto> getPhotoForViewer(Long photoId, User viewer) {
+        if (viewer == null) return Optional.empty();
+        return photoRepository.findById(photoId).filter(photo ->
+                photo.getValuationSession().getUser().getId().equals(viewer.getId())
+                || viewer.getRole() == Role.EXPERT || viewer.getRole() == Role.ADMIN);
+    }
+
     public List<ValuationSession> getUserHistory(User user) {
         return sessionRepository.findByUserIdOrderByCreatedAtDesc(user.getId());
+    }
+
+    @Transactional
+    public ValuationSession updateVinAndVehicleInfo(Long sessionId, String vin, Vehicle vehicleData, User user) {
+        ValuationSession session = sessionRepository.findByIdAndUserId(sessionId, user.getId())
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy phiên định giá"));
+        session.setVinScanned(vin);
+        return saveVehicleInfo(session, vehicleData, user);
     }
 
     @Transactional
     public ValuationSession updateVehicleInfo(Long sessionId, Vehicle vehicleData, User user) {
         ValuationSession session = sessionRepository.findByIdAndUserId(sessionId, user.getId())
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy phiên định giá"));
+        return saveVehicleInfo(session, vehicleData, user);
+    }
 
+    private ValuationSession saveVehicleInfo(ValuationSession session, Vehicle vehicleData, User user) {
         Vehicle vehicle = session.getVehicle();
         if (vehicle == null) {
             vehicle = new Vehicle();

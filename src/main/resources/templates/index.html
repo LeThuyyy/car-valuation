@@ -31,7 +31,7 @@
                     </div>
                 </div>
                 <div class="col-lg-5">
-                    <div class="card border-0 shadow-lg rounded-4 overflow-hidden bg-dark text-white p-4">
+                    <div class="card border-0 shadow-lg rounded-4 overflow-hidden bg-dark text-white p-4" th:if="${@environment.acceptsProfiles('!prod')}">
                         <div class="d-flex align-items-center mb-3">
                             <div class="bg-primary rounded-circle p-2 text-white me-3">
                                 <i class="bi bi-key-fill fs-5"></i>
@@ -69,6 +69,11 @@
                                 <i class="bi bi-box-arrow-in-right me-1"></i>Đăng nhập để trải nghiệm
                             </a>
                         </div>
+                    </div>
+                    <div class="card border-0 shadow-lg rounded-4 bg-dark text-white p-4" th:if="${@environment.acceptsProfiles('prod')}">
+                        <h5 class="fw-bold mb-2">Bắt đầu định giá xe của bạn</h5>
+                        <p class="text-secondary mb-3">Đăng ký tài khoản để lưu và xem lại hồ sơ định giá.</p>
+                        <a th:href="@{/register}" class="btn btn-warning fw-bold">Tạo tài khoản</a>
                     </div>
                 </div>
             </div>

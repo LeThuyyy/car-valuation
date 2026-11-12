@@ -1,14 +1,13 @@
 package com.carvaluation.valuation;
 
 import com.carvaluation.auth.CustomUserDetails;
-import com.carvaluation.auth.User;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.server.ResponseStatusException;
 import com.carvaluation.common.ApiResponse;
-import com.carvaluation.damage.DamageReport;
 import com.carvaluation.pricing.ValuationResult;
 import com.carvaluation.vehicle.Vehicle;
 import com.carvaluation.vin.VinDecoderService;
 import com.carvaluation.vin.VinScanResult;
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -19,6 +18,7 @@ import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 @Controller
@@ -55,36 +55,43 @@ public class ValuationController {
         ValuationSession session = valuationService.getSessionForUser(id, userDetails.getUser())
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy phiên định giá hoặc bạn không có quyền"));
 
-        model.addAttribute("session", session);
+        model.addAttribute("valuation", session);
         return "valuation/vin-scan";
     }
 
     @PostMapping("/valuation/{id}/vin")
     public String handleVinSubmit(@PathVariable("id") Long id,
                                   @RequestParam(value = "vin", required = false) String vin,
-                                  @AuthenticationPrincipal CustomUserDetails userDetails) {
+                                  @AuthenticationPrincipal CustomUserDetails userDetails,
+                                  RedirectAttributes redirectAttributes) {
         ValuationSession session = valuationService.getSessionForUser(id, userDetails.getUser())
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy phiên định giá"));
 
-        if (vin != null && !vin.isBlank()) {
-            session.setVinScanned(vin.trim().toUpperCase());
-            // Tự động giải mã VIN để điền sẵn vào xe
-            VinScanResult decoded = vinDecoderService.decodeVin(vin);
-            Vehicle vehicle = session.getVehicle() != null ? session.getVehicle() : new Vehicle();
-            vehicle.setUser(userDetails.getUser());
-            vehicle.setVin(vin.trim().toUpperCase());
-            if (decoded.getMake() != null) vehicle.setMake(decoded.getMake());
-            if (decoded.getModel() != null) vehicle.setModel(decoded.getModel());
-            if (decoded.getYear() != null) vehicle.setYear(decoded.getYear());
-            if (decoded.getTrim() != null) vehicle.setTrim(decoded.getTrim());
-            if (decoded.getBodyType() != null) vehicle.setBodyType(decoded.getBodyType());
-            if (decoded.getTransmission() != null) vehicle.setTransmission(decoded.getTransmission());
-            if (decoded.getFuelType() != null) vehicle.setFuelType(decoded.getFuelType());
-            if (decoded.getEngine() != null) vehicle.setEngine(decoded.getEngine());
-            if (decoded.getOrigin() != null) vehicle.setOrigin(decoded.getOrigin());
-
-            valuationService.updateVehicleInfo(id, vehicle, userDetails.getUser());
+        if (vin == null || vin.isBlank()) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Vui lòng nhập số VIN.");
+            return "redirect:/valuation/" + id + "/vin";
         }
+        VinScanResult decoded = vinDecoderService.decodeVin(vin);
+        if (!decoded.isValid()) {
+            redirectAttributes.addFlashAttribute("errorMessage", decoded.getMessage());
+            return "redirect:/valuation/" + id + "/vin";
+        }
+
+        // Tự động giải mã VIN để điền sẵn vào xe
+        Vehicle vehicle = session.getVehicle() != null ? session.getVehicle() : new Vehicle();
+        vehicle.setUser(userDetails.getUser());
+        vehicle.setVin(decoded.getVin());
+        if (decoded.getMake() != null) vehicle.setMake(decoded.getMake());
+        if (decoded.getModel() != null) vehicle.setModel(decoded.getModel());
+        if (decoded.getYear() != null) vehicle.setYear(decoded.getYear());
+        if (decoded.getTrim() != null) vehicle.setTrim(decoded.getTrim());
+        if (decoded.getBodyType() != null) vehicle.setBodyType(decoded.getBodyType());
+        if (decoded.getTransmission() != null) vehicle.setTransmission(decoded.getTransmission());
+        if (decoded.getFuelType() != null) vehicle.setFuelType(decoded.getFuelType());
+        if (decoded.getEngine() != null) vehicle.setEngine(decoded.getEngine());
+        if (decoded.getOrigin() != null) vehicle.setOrigin(decoded.getOrigin());
+
+        valuationService.updateVinAndVehicleInfo(id, decoded.getVin(), vehicle, userDetails.getUser());
 
         return "redirect:/valuation/" + id + "/vehicle";
     }
@@ -107,7 +114,7 @@ public class ValuationController {
             vehicle.setModel("Vios");
         }
 
-        model.addAttribute("session", session);
+        model.addAttribute("valuation", session);
         model.addAttribute("vehicle", vehicle);
         return "valuation/vehicle-info";
     }
@@ -130,14 +137,19 @@ public class ValuationController {
         ValuationSession session = valuationService.getSessionForUser(id, userDetails.getUser())
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy phiên định giá"));
 
-        model.addAttribute("session", session);
+        model.addAttribute("valuation", session);
         return "valuation/odo-scan";
     }
 
     @PostMapping("/valuation/{id}/odo")
     public String handleOdoSubmit(@PathVariable("id") Long id,
-                                  @RequestParam(value = "mileage", defaultValue = "35000") Integer mileage,
-                                  @AuthenticationPrincipal CustomUserDetails userDetails) {
+                                  @RequestParam(value = "mileage", required = false) Integer mileage,
+                                  @AuthenticationPrincipal CustomUserDetails userDetails,
+                                  RedirectAttributes redirectAttributes) {
+        if (mileage == null || mileage < 0 || mileage > 1_000_000) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Số ODO phải nằm trong khoảng 0–1.000.000 km.");
+            return "redirect:/valuation/" + id + "/odo";
+        }
         valuationService.updateOdo(id, mileage, userDetails.getUser());
         return "redirect:/valuation/" + id + "/photos";
     }
@@ -152,21 +164,21 @@ public class ValuationController {
         ValuationSession session = valuationService.getSessionForUser(id, userDetails.getUser())
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy phiên định giá"));
 
-        model.addAttribute("session", session);
-        model.addAttribute("photos", session.getPhotos());
+        model.addAttribute("valuation", session);
+        model.addAttribute("photos", photoViews(session));
         return "valuation/photos-damage";
     }
 
     @PostMapping("/valuation/{id}/photos/upload")
     @ResponseBody
-    public ResponseEntity<ApiResponse<CarPhoto>> handlePhotoUpload(
+    public ResponseEntity<ApiResponse<PhotoView>> handlePhotoUpload(
             @PathVariable("id") Long id,
             @RequestParam("photoType") PhotoType photoType,
             @RequestParam("file") MultipartFile file,
             @AuthenticationPrincipal CustomUserDetails userDetails) {
         try {
             CarPhoto photo = valuationService.uploadAndAnalyzePhoto(id, photoType, file, userDetails.getUser());
-            return ResponseEntity.ok(ApiResponse.ok("Tải ảnh và phân tích AI thành công", photo));
+            return ResponseEntity.ok(ApiResponse.ok("Tải ảnh và phân tích AI thành công", PhotoView.from(photo)));
         } catch (Exception e) {
             return ResponseEntity.internalServerError().body(ApiResponse.error("Lỗi khi tải ảnh: " + e.getMessage()));
         }
@@ -182,7 +194,7 @@ public class ValuationController {
         ValuationSession session = valuationService.getSessionForUser(id, userDetails.getUser())
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy phiên định giá"));
 
-        model.addAttribute("session", session);
+        model.addAttribute("valuation", session);
         return "valuation/questionnaire";
     }
 
@@ -202,8 +214,8 @@ public class ValuationController {
     public String valuationResult(@PathVariable("id") Long id,
                                   @AuthenticationPrincipal CustomUserDetails userDetails,
                                   Model model) {
-        ValuationSession session = valuationService.getSessionForUser(id, userDetails.getUser())
-                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy hồ sơ định giá"));
+        ValuationSession session = valuationService.getSessionForViewer(id, userDetails.getUser())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Không tìm thấy hồ sơ định giá"));
 
         ValuationResult aiResult = null;
         if (session.getAiReportJson() != null && !session.getAiReportJson().isBlank()) {
@@ -212,10 +224,10 @@ public class ValuationController {
             } catch (Exception ignored) {}
         }
 
-        model.addAttribute("session", session);
+        model.addAttribute("valuation", session);
         model.addAttribute("vehicle", session.getVehicle());
         model.addAttribute("aiResult", aiResult);
-        model.addAttribute("photos", session.getPhotos());
+        model.addAttribute("photos", photoViews(session));
 
         return "valuation/result";
     }
@@ -238,5 +250,9 @@ public class ValuationController {
                                   @AuthenticationPrincipal CustomUserDetails userDetails,
                                   Model model) {
         return valuationResult(id, userDetails, model);
+    }
+
+    private List<PhotoView> photoViews(ValuationSession session) {
+        return session.getPhotos().stream().map(PhotoView::from).toList();
     }
 }

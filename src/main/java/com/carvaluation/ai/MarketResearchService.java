@@ -5,6 +5,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
+import org.springframework.core.env.Environment;
+
+import java.util.Arrays;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -16,10 +19,12 @@ public class MarketResearchService {
 
     private final GeminiClient geminiClient;
     private final ObjectMapper objectMapper;
+    private final boolean production;
 
-    public MarketResearchService(GeminiClient geminiClient, ObjectMapper objectMapper) {
+    public MarketResearchService(GeminiClient geminiClient, ObjectMapper objectMapper, Environment environment) {
         this.geminiClient = geminiClient;
         this.objectMapper = objectMapper;
+        this.production = Arrays.asList(environment.getActiveProfiles()).contains("prod");
     }
 
     public Map<String, Object> researchMarketPrice(String make, String model, Integer year, String trim) {
@@ -46,6 +51,14 @@ public class MarketResearchService {
         try {
             String jsonText = geminiClient.generateTextContent(prompt);
             JsonNode root = objectMapper.readTree(cleanJsonMarkdown(jsonText));
+            if (production && (!root.path("marketPriceMin").isNumber()
+                    || !root.path("marketPriceMax").isNumber()
+                    || !root.path("marketPriceAvg").isNumber()
+                    || root.path("marketPriceMin").asLong() <= 0
+                    || root.path("marketPriceMin").asLong() > root.path("marketPriceAvg").asLong()
+                    || root.path("marketPriceAvg").asLong() > root.path("marketPriceMax").asLong())) {
+                throw new IllegalArgumentException("Invalid market price response");
+            }
 
             result.put("marketPriceMin", root.path("marketPriceMin").asLong(400_000_000L));
             result.put("marketPriceMax", root.path("marketPriceMax").asLong(450_000_000L));
@@ -54,7 +67,7 @@ public class MarketResearchService {
             result.put("notes", root.path("notes").asText("Thanh khoản tốt tại thị trường Việt Nam"));
         } catch (Exception e) {
             log.warn("Market research parsing failed: {}", e.getMessage());
-            result.put("marketPriceAvg", 450_000_000L);
+            if (!production) result.put("marketPriceAvg", 450_000_000L);
         }
 
         return result;

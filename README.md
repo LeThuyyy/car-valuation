@@ -2,7 +2,7 @@
 
 Ứng dụng web hỗ trợ **định giá sơ bộ xe ô tô đã qua sử dụng**: nhận diện VIN và ODO từ ảnh, phân tích dấu hiệu hư hỏng *ngoại thất nhìn thấy được*, tính giá tham khảo theo quy tắc và hỗ trợ chuyên gia rà soát.
 
-> **Trạng thái: MVP đang phát triển — chưa sẵn sàng triển khai công khai hoặc dùng cho quyết định giao dịch.** Kiểm thử hiện có chỉ bao phủ một phần VIN/pricing; luồng trình duyệt và các ranh giới bảo mật vẫn cần hoàn thiện. Không dùng kết quả ảnh để khẳng định tai nạn kết cấu hay ngập nước. Xem [các giới hạn hiện tại](docs/known-limitations.md).
+> **Trạng thái: MVP đang phát triển — chưa sẵn sàng triển khai công khai hoặc dùng cho quyết định giao dịch.** Kiểm thử tự động bao phủ một số bước wizard, phân quyền và render; chưa có kiểm thử end-to-end trên trình duyệt. Không dùng kết quả ảnh để khẳng định tai nạn kết cấu hay ngập nước. Xem [các giới hạn hiện tại](docs/known-limitations.md) và [checklist chuẩn bị triển khai](docs/deployment-preparation.md).
 
 ## Kiến trúc client–server hiện tại
 
@@ -53,7 +53,7 @@ mvn test
 mvn spring-boot:run
 ```
 
-Mở <http://localhost:8080>. Cấu hình mặc định dùng **H2 in-memory**: dữ liệu trong database mất sau mỗi lần tắt ứng dụng; ảnh lưu trên đĩa theo `app.storage.upload-dir`. `DataInitializer` tạo tài khoản demo khi bảng người dùng trống, kể cả khi bật profile MySQL — **không đưa cấu hình hiện tại lên Internet**. Xem `src/main/java/com/carvaluation/config/DataInitializer.java` để biết seed cục bộ; đổi cách bootstrap và thông tin đăng nhập trước khi triển khai.
+Mở <http://localhost:8080>. Cấu hình mặc định dùng **H2 in-memory**: dữ liệu trong database mất sau mỗi lần tắt ứng dụng; ảnh lưu trên đĩa theo `app.storage.upload-dir`. `DataInitializer` tạo tài khoản demo khi bảng người dùng trống trong profile local/MySQL; profile `prod` không tạo tài khoản mẫu. **Không đưa cấu hình local lên Internet.** Xem `src/main/java/com/carvaluation/config/DataInitializer.java` để biết seed cục bộ; tài khoản ADMIN đầu tiên cho prod vẫn cần quy trình riêng được chủ dự án phê duyệt.
 
 Để thử MySQL, tạo database `car_valuation_db`, sau đó chỉnh cấu hình local theo `src/main/resources/application-mysql.properties` và chạy:
 
@@ -61,7 +61,7 @@ Mở <http://localhost:8080>. Cấu hình mặc định dùng **H2 in-memory**: 
 mvn spring-boot:run -Dspring-boot.run.profiles=mysql
 ```
 
-**Profile MySQL hiện có mật khẩu hard-code và `ddl-auto=update`; chỉ dùng để thử nghiệm, không phải cấu hình production.** Không commit khóa API hay mật khẩu thật. Biến môi trường `GEMINI_API_KEY` được đọc bởi `application.properties`; không có khóa hợp lệ thì client AI dùng mock, và lỗi gọi Gemini cũng có thể rơi về mock. Mock **không phải** kết quả nhận diện từ ảnh thực tế.
+**Profile MySQL hiện có mật khẩu hard-code và `ddl-auto=update`; chỉ dùng để thử nghiệm, không phải cấu hình production.** Không commit khóa API hay mật khẩu thật. Profile `prod` dùng biến môi trường cho DB/ảnh/khóa Gemini, không tạo tài khoản demo và không trả mock khi API lỗi; xem [checklist triển khai](docs/deployment-preparation.md). Ở chế độ local, thiếu khóa hoặc lỗi gọi Gemini vẫn có thể trả mock — mock **không phải** kết quả nhận diện từ ảnh thực tế.
 
 ## Kiểm thử và cộng tác
 
@@ -72,7 +72,7 @@ mvn -Dtest=VinValidatorTest test
 mvn package
 ```
 
-Nhánh `main` dành cho phát hành; `develop` là nhánh tích hợp. Tạo nhánh tính năng/sửa lỗi từ `develop` và gửi PR về `develop`; PR phát hành đi từ `develop` sang `main`. Workflow GitHub Actions chạy `mvn -B verify` trên JDK 21 cho PR và push vào hai nhánh này. Kiểm thử chạy thành công **không đồng nghĩa** wizard trình duyệt đã hoạt động. Xem [CONTRIBUTING.md](CONTRIBUTING.md) để tạo issue, nhánh và PR; xem [SECURITY.md](SECURITY.md) khi phát hiện lỗ hổng.
+Nhánh `main` dành cho phát hành; `develop` là nhánh tích hợp. Tạo nhánh tính năng/sửa lỗi từ `develop` và gửi PR về `develop`; PR phát hành đi từ `develop` sang `main`. Workflow GitHub Actions chạy `mvn -B verify` trên JDK 21 cho PR và push vào hai nhánh này. Các bài test về phân quyền ảnh, DTO và CSRF chỉ xác minh các đường đi được kiểm tra; **chưa chứng minh** toàn bộ wizard trình duyệt đã hoạt động. Xem [CONTRIBUTING.md](CONTRIBUTING.md) để tạo issue, nhánh và PR; xem [SECURITY.md](SECURITY.md) khi phát hiện lỗ hổng.
 
 ## Phạm vi tính năng
 
