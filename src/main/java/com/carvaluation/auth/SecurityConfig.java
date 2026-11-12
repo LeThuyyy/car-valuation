@@ -2,6 +2,8 @@ package com.carvaluation.auth;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.env.Environment;
+import org.springframework.security.authorization.AuthorizationDecision;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
@@ -27,7 +29,8 @@ public class SecurityConfig {
     }
 
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+    public SecurityFilterChain securityFilterChain(HttpSecurity http, Environment environment) throws Exception {
+        boolean production = java.util.Arrays.asList(environment.getActiveProfiles()).contains("prod");
         http
             .authorizeHttpRequests(auth -> auth
                 // Tài nguyên tĩnh công khai
@@ -35,7 +38,9 @@ public class SecurityConfig {
                 // Never expose uploaded vehicle photos via a public static-resource URL.
                 .requestMatchers("/uploads/**").denyAll()
                 // Trang chủ, Đăng nhập, Đăng ký, API công khai
-                .requestMatchers("/", "/login", "/register", "/about", "/h2-console/**").permitAll()
+                .requestMatchers("/", "/login", "/register", "/about").permitAll()
+                .requestMatchers("/h2-console/**").access((authentication, context) ->
+                        new AuthorizationDecision(!production))
                 // Phân quyền Quản trị viên
                 .requestMatchers("/admin/**").hasRole("ADMIN")
                 // Phân quyền Chuyên gia thẩm định (Admin cũng có quyền vào)
@@ -64,7 +69,7 @@ public class SecurityConfig {
             // Cho phép hiển thị H2 console trong iframe khi dev
             .headers(headers -> headers.frameOptions(frame -> frame.sameOrigin()))
             .csrf(csrf -> csrf
-                .ignoringRequestMatchers("/h2-console/**", "/api/**")
+                .ignoringRequestMatchers("/h2-console/**")
             );
 
         return http.build();

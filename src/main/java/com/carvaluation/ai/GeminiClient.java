@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
+import org.springframework.core.env.Environment;
 
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -21,10 +22,15 @@ public class GeminiClient {
     private final GeminiConfig config;
     private final ObjectMapper objectMapper;
     private final HttpClient httpClient;
+    private final boolean production;
 
-    public GeminiClient(GeminiConfig config, ObjectMapper objectMapper) {
+    public GeminiClient(GeminiConfig config, ObjectMapper objectMapper, Environment environment) {
         this.config = config;
         this.objectMapper = objectMapper;
+        this.production = Arrays.asList(environment.getActiveProfiles()).contains("prod");
+        if (production && config.isMockMode()) {
+            throw new IllegalStateException("Production requires a configured Gemini API key and disabled mock mode");
+        }
         this.httpClient = HttpClient.newBuilder()
                 .connectTimeout(Duration.ofSeconds(15))
                 .build();
@@ -84,9 +90,11 @@ public class GeminiClient {
                 return extractTextFromGeminiResponse(response.body());
             } else {
                 log.error("Gemini API error status {}: {}", response.statusCode(), response.body());
+                if (production) throw new IllegalStateException("Gemini vision request failed (HTTP " + response.statusCode() + ")");
                 return generateMockResponse(prompt);
             }
         } catch (Exception e) {
+            if (production) throw new IllegalStateException("Gemini vision request failed", e);
             log.warn("Gemini API call failed, falling back to smart heuristic: {}", e.getMessage());
             return generateMockResponse(prompt);
         }
@@ -134,9 +142,11 @@ public class GeminiClient {
                 return extractTextFromGeminiResponse(response.body());
             } else {
                 log.error("Gemini Text API error status {}: {}", response.statusCode(), response.body());
+                if (production) throw new IllegalStateException("Gemini text request failed (HTTP " + response.statusCode() + ")");
                 return generateMockTextResponse(prompt);
             }
         } catch (Exception e) {
+            if (production) throw new IllegalStateException("Gemini text request failed", e);
             log.warn("Gemini Text API call failed, using mock: {}", e.getMessage());
             return generateMockTextResponse(prompt);
         }
