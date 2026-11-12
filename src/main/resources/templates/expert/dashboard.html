@@ -55,7 +55,7 @@
                                 <span class="fw-bold text-success" th:if="${s.odoMileage != null}" th:text="${#numbers.formatDecimal(s.odoMileage, 0, 'COMMA', 0, 'POINT') + ' km'}">35.000 km</span>
                             </td>
                             <td>
-                                <div class="fw-bold text-primary" th:if="${s.finalPriceVnd != null}" th:text="${#numbers.formatDecimal(s.finalPriceVnd, 0, 'COMMA', 0, 'POINT') + ' đ'}">
+                                <div class="fw-bold text-primary" th:if="${s.estimatedPriceVnd != null}" th:text="${#numbers.formatDecimal(s.estimatedPriceVnd, 0, 'COMMA', 0, 'POINT') + ' đ'}">
                                     485.000.000 đ
                                 </div>
                             </td>

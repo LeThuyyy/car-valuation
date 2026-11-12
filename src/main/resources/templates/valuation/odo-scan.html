@@ -79,7 +79,7 @@
                     </div>
 
                     <!-- Form xác nhận ODO -->
-                    <form th:action="@{'/valuation/' + ${session.id} + '/odo'}" method="post" id="odoForm">
+                    <form th:action="@{'/valuation/' + ${valuation.id} + '/odo'}" method="post" id="odoForm">
                         <div class="mb-3">
                             <label for="mileageInput" class="form-label fw-bold">
                                 Số Km Lăn Bánh Xác Nhận (Km) <span class="badge bg-primary ms-1">ODO</span>
@@ -87,21 +87,21 @@
                             <div class="input-group input-group-lg">
                                 <span class="input-group-text bg-white"><i class="bi bi-speedometer2 text-success"></i></span>
                                 <input type="number" class="form-control fw-bold fs-4 text-end" id="mileageInput" name="mileage"
-                                       th:value="${session.odoMileage != null ? session.odoMileage : 35000}" min="0" max="1000000" step="100" required>
+                                       th:value="${valuation.odoMileage != null ? valuation.odoMileage : 35000}" min="0" max="1000000" step="1" required>
                                 <span class="input-group-text bg-light fw-bold">km</span>
                             </div>
                             <div id="odoStatusMessage" class="small mt-2"></div>
                         </div>
 
                         <!-- Thông tin xe đang định giá -->
-                        <div class="p-3 bg-light rounded-3 mb-4 small text-secondary" th:if="${session.vehicle != null}">
+                        <div class="p-3 bg-light rounded-3 mb-4 small text-secondary" th:if="${valuation.vehicle != null}">
                             <i class="bi bi-info-circle me-1 text-primary"></i> Xe đang định giá:
-                            <strong th:text="${session.vehicle.make + ' ' + session.vehicle.model + ' (' + session.vehicle.year + ')'}">Toyota Vios 2022</strong>
+                            <strong th:text="${valuation.vehicle.make + ' ' + valuation.vehicle.model + ' (' + valuation.vehicle.year + ')'}">Toyota Vios 2022</strong>
                             &bull; Chuẩn xe gia đình: ~13.500 km/năm.
                         </div>
 
                         <div class="d-flex justify-content-between align-items-center pt-3 border-top">
-                            <a th:href="@{'/valuation/' + ${session.id} + '/vehicle'}" class="btn btn-outline-secondary">
+                            <a th:href="@{'/valuation/' + ${valuation.id} + '/vehicle'}" class="btn btn-outline-secondary">
                                 <i class="bi bi-arrow-left me-1"></i> Quay Lại Bước 2
                             </a>
                             <button type="submit" class="btn btn-warning btn-lg fw-bold px-4 shadow">
@@ -113,7 +113,6 @@
             </div>
         </div>
     </div>
-</div>
 
 <script>
 document.addEventListener("DOMContentLoaded", function() {
@@ -122,6 +121,10 @@ document.addEventListener("DOMContentLoaded", function() {
     const mileageInput = document.getElementById("mileageInput");
     const odoLoading = document.getElementById("odoLoading");
     const odoStatus = document.getElementById("odoStatusMessage");
+    const csrfToken = document.querySelector('meta[name="_csrf"]')?.content;
+    const csrfHeader = document.querySelector('meta[name="_csrf_header"]')?.content;
+    const headers = { "Content-Type": "application/json" };
+    if (csrfToken && csrfHeader) headers[csrfHeader] = csrfToken;
 
     try {
         carCam = new CarCamera("odoVideo", "odoCanvas");
@@ -189,24 +192,28 @@ document.addEventListener("DOMContentLoaded", function() {
         try {
             const resp = await fetch("/api/odo/scan", {
                 method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ imageBase64: base64Data })
+                headers,
+                body: JSON.stringify({ base64Image: base64Data })
             });
             const data = await resp.json();
             odoLoading.style.display = "none";
 
-            if (data.success && data.data && data.data.mileage) {
+            if (data.success && data.data?.success && Number.isInteger(data.data.mileage) && data.data.mileage >= 0 && data.data.mileage <= 1000000) {
                 mileageInput.value = data.data.mileage;
-                odoStatus.innerHTML = '<span class="text-success fw-bold"><i class="bi bi-check-circle"></i> AI đọc thành công: ' + Number(data.data.mileage).toLocaleString('vi-VN') + ' km (Độ tin cậy: ' + Math.round((data.data.confidence || 0.95)*100) + '%)</span>';
+                odoStatus.textContent = "AI đọc được " + Number(data.data.mileage).toLocaleString('vi-VN') + " km. Vui lòng đối soát với đồng hồ.";
+                odoStatus.className = "small mt-2 text-success fw-bold";
             } else {
-                odoStatus.innerHTML = '<span class="text-warning"><i class="bi bi-exclamation-triangle"></i> ' + (data.message || 'Không đọc rõ số km. Vui lòng đối soát và chỉnh sửa số km trong ô bên dưới.') + '</span>';
+                odoStatus.textContent = data.data?.message || data.message || "Không đọc rõ số km. Vui lòng nhập tay.";
+                odoStatus.className = "small mt-2 text-warning";
             }
         } catch(e) {
             odoLoading.style.display = "none";
-            odoStatus.innerHTML = '<span class="text-danger"><i class="bi bi-x-circle"></i> Lỗi kết nối dịch vụ AI. Bạn có thể nhập số km trực tiếp.</span>';
+            odoStatus.textContent = "Lỗi kết nối dịch vụ AI. Bạn có thể nhập số km trực tiếp.";
+            odoStatus.className = "small mt-2 text-danger";
         }
     }
 });
 </script>
+</div>
 </body>
 </html>

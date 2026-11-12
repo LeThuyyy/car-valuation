@@ -145,6 +145,10 @@ public class ValuationSession {
         this.odoMileage = odoMileage;
     }
 
+    public Long getDisplayPriceVnd() {
+        return expertAdjustedPriceVnd != null ? expertAdjustedPriceVnd : estimatedPriceVnd;
+    }
+
     public Long getEstimatedPriceVnd() {
         return estimatedPriceVnd;
     }

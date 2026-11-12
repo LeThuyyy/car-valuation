@@ -10,7 +10,7 @@
         <div class="d-flex justify-content-between align-items-center mb-4">
             <div>
                 <a th:href="@{/expert/dashboard}" class="text-decoration-none text-muted small"><i class="bi bi-arrow-left me-1"></i>Quay lại danh sách chờ duyệt</a>
-                <h3 class="fw-bold mb-0 mt-1">Giám Định Hồ Sơ Xe #<span th:text="${session.id}">1</span></h3>
+                <h3 class="fw-bold mb-0 mt-1">Giám Định Hồ Sơ Xe #<span th:text="${valuation.id}">1</span></h3>
             </div>
             <div>
                 <span class="badge bg-info text-dark fs-6 px-3 py-2">CHUYÊN GIA THẨM ĐỊNH</span>
@@ -23,12 +23,12 @@
                 <div class="card border-0 shadow-sm rounded-4 p-4 bg-white mb-4">
                     <h5 class="fw-bold mb-3"><i class="bi bi-car-front text-primary me-2"></i> Thông Tin Xe Khách Hàng Khai Báo</h5>
                     <div class="row g-2 small">
-                        <div class="col-6 col-md-4">Hãng &amp; Mẫu: <strong th:text="${vehicle.make + ' ' + vehicle.model}">Toyota Vios</strong></div>
-                        <div class="col-6 col-md-4">Năm sản xuất: <strong th:text="${vehicle.year}">2022</strong></div>
-                        <div class="col-6 col-md-4">Số ODO: <strong class="text-success" th:text="${session.odoMileage != null ? #numbers.formatDecimal(session.odoMileage, 0, 'COMMA', 0, 'POINT') + ' km' : '-'}">35.000 km</strong></div>
-                        <div class="col-6 col-md-4">Số Khung (VIN): <code th:text="${session.vinScanned}">VF8A1XXXXXXXXXXXX</code></div>
-                        <div class="col-6 col-md-4">Biển số: <span class="badge bg-light text-dark border" th:text="${vehicle.licensePlate != null ? vehicle.licensePlate : '-'}">30H-123.45</span></div>
-                        <div class="col-6 col-md-4">Hộp số / Nhiên liệu: <span th:text="${vehicle.transmission + ' / ' + vehicle.fuelType}">Tự động / Xăng</span></div>
+                        <div class="col-6 col-md-4">Hãng &amp; Mẫu: <strong th:text="${vehicle != null ? vehicle.make + ' ' + vehicle.model : '-'}">Toyota Vios</strong></div>
+                        <div class="col-6 col-md-4">Năm sản xuất: <strong th:text="${vehicle != null ? vehicle.year : '-'}">2022</strong></div>
+                        <div class="col-6 col-md-4">Số ODO: <strong class="text-success" th:text="${valuation.odoMileage != null ? #numbers.formatDecimal(valuation.odoMileage, 0, 'COMMA', 0, 'POINT') + ' km' : '-'}">35.000 km</strong></div>
+                        <div class="col-6 col-md-4">Số Khung (VIN): <code th:text="${valuation.vinScanned}">VF8A1XXXXXXXXXXXX</code></div>
+                        <div class="col-6 col-md-4">Biển số: <span class="badge bg-light text-dark border" th:text="${vehicle != null && vehicle.licensePlate != null ? vehicle.licensePlate : '-'}">30H-123.45</span></div>
+                        <div class="col-6 col-md-4">Hộp số / Nhiên liệu: <span th:text="${vehicle != null ? vehicle.transmission + ' / ' + vehicle.fuelType : '-'}">Tự động / Xăng</span></div>
                     </div>
                 </div>
 
@@ -97,14 +97,14 @@
                         </div>
                     </div>
 
-                    <form th:action="@{'/expert/review/' + ${session.id}}" method="post">
+                    <form th:action="@{'/expert/review/' + ${valuation.id}}" method="post">
                         <div class="mb-3">
                             <label for="adjustedPrice" class="form-label fw-bold">
                                 Giá Thẩm Định Cuối Cùng (VNĐ) <span class="text-danger">*</span>
                             </label>
                             <div class="input-group input-group-lg">
                                 <input type="number" class="form-control text-end fw-bold text-primary" id="adjustedPrice" name="adjustedPrice"
-                                       th:value="${session.finalPriceVnd != null ? session.finalPriceVnd : 485000000}" step="1000000" required>
+                                       th:value="${valuation.displayPriceVnd != null ? valuation.displayPriceVnd : 0}" step="1000000" required>
                                 <span class="input-group-text bg-light fw-bold">VNĐ</span>
                             </div>
                             <small class="text-muted">Chuyên gia có quyền tăng hoặc giảm giá dựa trên kinh nghiệm thực tế thị trường.</small>

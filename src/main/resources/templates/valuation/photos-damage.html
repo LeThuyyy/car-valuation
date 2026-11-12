@@ -141,10 +141,10 @@
                     </div>
 
                     <div class="d-flex justify-content-between align-items-center pt-3 border-top">
-                        <a th:href="@{'/valuation/' + ${session.id} + '/odo'}" class="btn btn-outline-secondary">
+                        <a th:href="@{'/valuation/' + ${valuation.id} + '/odo'}" class="btn btn-outline-secondary">
                             <i class="bi bi-arrow-left me-1"></i> Quay Lại Bước 3
                         </a>
-                        <a th:href="@{'/valuation/' + ${session.id} + '/questionnaire'}" class="btn btn-warning btn-lg fw-bold px-4 shadow">
+                        <a th:href="@{'/valuation/' + ${valuation.id} + '/questionnaire'}" class="btn btn-warning btn-lg fw-bold px-4 shadow">
                             Tiếp Tục Bước 5 (Bảng Hỏi Tình Trạng) <i class="bi bi-arrow-right ms-1"></i>
                         </a>
                     </div>
@@ -155,7 +155,7 @@
 
 <script th:inline="javascript">
 document.addEventListener("DOMContentLoaded", function() {
-    const sessionId = /*[[${session.id}]]*/ 1;
+    const sessionId = /*[[${valuation.id}]]*/ 1;
     const aiAnalyzing = document.getElementById("aiAnalyzing");
     const uploaders = document.querySelectorAll(".photo-uploader");
 
