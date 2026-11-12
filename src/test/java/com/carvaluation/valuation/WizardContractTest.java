@@ -98,6 +98,14 @@ class WizardContractTest {
     }
 
     @Test
+    void apiRejectsPostWithoutCsrf() throws Exception {
+        mvc.perform(post("/api/vin/scan").with(user(signedIn(1, Role.USER)))
+                        .contentType(MediaType.APPLICATION_JSON).content("{}"))
+                .andExpect(status().isForbidden());
+        verify(visionService, never()).ocrVinFromImage(any(), any());
+    }
+
+    @Test
     void scanAndDecodeEndpointsAcceptBrowserPayload() throws Exception {
         CustomUserDetails owner = signedIn(1, Role.USER);
         VinScanResult vin = new VinScanResult();
@@ -110,11 +118,11 @@ class WizardContractTest {
                 .thenReturn(new OdoScanResult(true, 0, "km", true, "OK"));
         String image = "{\"base64Image\":\"data:image/png;base64,AQID\"}";
 
-        mvc.perform(post("/api/vin/scan").with(user(owner)).contentType(MediaType.APPLICATION_JSON).content(image))
+        mvc.perform(post("/api/vin/scan").with(user(owner)).with(csrf()).contentType(MediaType.APPLICATION_JSON).content(image))
                 .andExpect(status().isOk()).andExpect(jsonPath("$.data.valid").value(true));
-        mvc.perform(post("/api/odo/scan").with(user(owner)).contentType(MediaType.APPLICATION_JSON).content(image))
+        mvc.perform(post("/api/odo/scan").with(user(owner)).with(csrf()).contentType(MediaType.APPLICATION_JSON).content(image))
                 .andExpect(status().isOk()).andExpect(jsonPath("$.data.mileage").value(0));
-        mvc.perform(post("/api/vin/decode").with(user(owner)).contentType(MediaType.APPLICATION_JSON)
+        mvc.perform(post("/api/vin/decode").with(user(owner)).with(csrf()).contentType(MediaType.APPLICATION_JSON)
                         .content("{\"vin\":\"1HGCM82633A004352\"}"))
                 .andExpect(status().isOk()).andExpect(jsonPath("$.data.vin").value(vin.getVin()));
     }

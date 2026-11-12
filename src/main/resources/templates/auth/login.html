@@ -47,8 +47,8 @@
                         </a>
                     </div>
 
-                    <!-- Quick logins hint -->
-                    <div class="mt-4 p-3 bg-light rounded-3 small">
+                    <!-- Quick logins hint (local development only) -->
+                    <div class="mt-4 p-3 bg-light rounded-3 small" th:if="${@environment.acceptsProfiles('!prod')}">
                         <strong class="d-block mb-1 text-secondary"><i class="bi bi-info-circle me-1"></i>Tài khoản thử nghiệm:</strong>
                         <div class="d-flex justify-content-between mb-1">
                             <span>Quản trị: <code>admin</code> / <code>admin123</code></span>
