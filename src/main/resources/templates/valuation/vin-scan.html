@@ -79,7 +79,7 @@
                     </div>
 
                     <!-- Form xác nhận số VIN -->
-                    <form th:action="@{'/valuation/' + ${session.id} + '/vin'}" method="post" id="vinForm">
+                    <form th:action="@{'/valuation/' + ${valuation.id} + '/vin'}" method="post" id="vinForm">
                         <div class="mb-3">
                             <label for="vinInput" class="form-label fw-bold">
                                 Số Khung (VIN) Xác Nhận <span class="badge bg-secondary ms-1">17 Ký Tự</span>
@@ -87,7 +87,7 @@
                             <div class="input-group input-group-lg">
                                 <span class="input-group-text bg-white"><i class="bi bi-upc-scan text-primary"></i></span>
                                 <input type="text" class="form-control text-uppercase font-monospace fw-bold" id="vinInput" name="vin"
-                                       th:value="${session.vinScanned}" maxlength="17" placeholder="Ví dụ: VF8A1XXXXXXXXXXXX" required>
+                                       th:value="${valuation.vinScanned}" maxlength="17" placeholder="Ví dụ: VF8A1XXXXXXXXXXXX" required>
                                 <button type="button" class="btn btn-outline-primary" id="btnVerifyVin">
                                     <i class="bi bi-check-lg me-1"></i> Giải Mã VIN
                                 </button>
@@ -119,7 +119,6 @@
             </div>
         </div>
     </div>
-</div>
 
 <script>
 document.addEventListener("DOMContentLoaded", function() {
@@ -131,6 +130,10 @@ document.addEventListener("DOMContentLoaded", function() {
     const vinLoading = document.getElementById("vinLoading");
     const vinMsg = document.getElementById("vinValidationMessage");
     const decodedCard = document.getElementById("vinDecodedCard");
+    const csrfToken = document.querySelector('meta[name="_csrf"]')?.content;
+    const csrfHeader = document.querySelector('meta[name="_csrf_header"]')?.content;
+    const headers = { "Content-Type": "application/json" };
+    if (csrfToken && csrfHeader) headers[csrfHeader] = csrfToken;
 
     try {
         carCam = new CarCamera("vinVideo", "vinCanvas");
@@ -200,44 +203,68 @@ document.addEventListener("DOMContentLoaded", function() {
         try {
             const resp = await fetch("/api/vin/scan", {
                 method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ imageBase64: base64Data })
+                headers,
+                body: JSON.stringify({ base64Image: base64Data })
             });
             const data = await resp.json();
             vinLoading.style.display = "none";
 
-            if (data.success && data.data && data.data.vin) {
+            if (data.success && data.data?.success && data.data.valid && data.data.vin) {
                 vinInput.value = data.data.vin;
                 showDecodedInfo(data.data);
-                vinMsg.innerHTML = '<span class="text-success fw-bold"><i class="bi bi-check-circle"></i> AI đã nhận diện thành công số VIN!</span>';
+                vinMsg.textContent = data.message || "AI đã nhận diện VIN hợp lệ. Vui lòng xác nhận thông tin xe.";
+                vinMsg.className = "small mt-1 text-success fw-bold";
             } else {
-                vinMsg.innerHTML = '<span class="text-warning"><i class="bi bi-exclamation-triangle"></i> ' + (data.message || 'Không thể đọc rõ số VIN. Vui lòng thử lại hoặc nhập tay.') + '</span>';
+                decodedCard.style.display = "none";
+                vinMsg.textContent = data.data?.message || data.message || "Không thể đọc VIN hợp lệ. Vui lòng thử lại hoặc nhập tay.";
+                vinMsg.className = "small mt-1 text-warning";
             }
         } catch(err) {
             vinLoading.style.display = "none";
-            vinMsg.innerHTML = '<span class="text-danger"><i class="bi bi-x-circle"></i> Lỗi kết nối dịch vụ AI. Vui lòng nhập số VIN thủ công.</span>';
+            decodedCard.style.display = "none";
+            vinMsg.textContent = "Lỗi kết nối dịch vụ AI. Vui lòng nhập số VIN thủ công.";
+            vinMsg.className = "small mt-1 text-danger";
         }
     }
 
     // Nút giải mã VIN khi nhập tay
     const btnVerify = document.getElementById("btnVerifyVin");
     if (btnVerify) {
+        vinInput.addEventListener("input", () => {
+            decodedCard.style.display = "none";
+            vinMsg.textContent = "";
+        });
         btnVerify.addEventListener("click", async () => {
             const vin = vinInput.value.trim().toUpperCase();
             if (vin.length !== 17) {
-                vinMsg.innerHTML = '<span class="text-danger">Số VIN phải có độ dài đúng 17 ký tự (chuẩn ISO 3779).</span>';
+                decodedCard.style.display = "none";
+                vinMsg.textContent = "Số VIN phải có độ dài đúng 17 ký tự (chuẩn ISO 3779).";
+                vinMsg.className = "small mt-1 text-danger";
                 return;
             }
             vinLoading.style.display = "block";
             try {
-                const resp = await fetch("/api/vin/decode?vin=" + encodeURIComponent(vin));
+                const resp = await fetch("/api/vin/decode", {
+                    method: "POST",
+                    headers,
+                    body: JSON.stringify({ vin })
+                });
                 const data = await resp.json();
-                vinLoading.style.display = "none";
-                if (data.success && data.data) {
+                if (data.success && data.data?.valid) {
+                    vinInput.value = data.data.vin || vin;
                     showDecodedInfo(data.data);
-                    vinMsg.innerHTML = '<span class="text-success"><i class="bi bi-check-circle"></i> Giải mã số VIN thành công!</span>';
+                    vinMsg.textContent = data.message || "Giải mã VIN hợp lệ!";
+                    vinMsg.className = "small mt-1 text-success";
+                } else {
+                    decodedCard.style.display = "none";
+                    vinMsg.textContent = data.data?.message || data.message || "VIN không hợp lệ. Vui lòng kiểm tra lại.";
+                    vinMsg.className = "small mt-1 text-danger";
                 }
             } catch(e) {
+                decodedCard.style.display = "none";
+                vinMsg.textContent = "Không thể kết nối dịch vụ giải mã VIN. Vui lòng thử lại.";
+                vinMsg.className = "small mt-1 text-danger";
+            } finally {
                 vinLoading.style.display = "none";
             }
         });
@@ -252,5 +279,6 @@ document.addEventListener("DOMContentLoaded", function() {
     }
 });
 </script>
+</div>
 </body>
 </html>

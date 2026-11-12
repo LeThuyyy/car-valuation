@@ -58,6 +58,7 @@ class PhotoWorkflowTest {
         mvc.perform(get("/valuation/7/photos").with(user(owner)))
                 .andExpect(status().isOk())
                 .andExpect(content().string(org.hamcrest.Matchers.containsString("/photos/upload")))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("/valuation/7/questionnaire")))
                 .andExpect(content().string(org.hamcrest.Matchers.containsString("name=\"_csrf\"")))
                 .andExpect(content().string(org.hamcrest.Matchers.containsString("name=\"_csrf_header\"")));
     }

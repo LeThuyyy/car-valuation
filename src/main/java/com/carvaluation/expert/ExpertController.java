@@ -45,7 +45,7 @@ public class ExpertController {
             } catch (Exception ignored) {}
         }
 
-        model.addAttribute("session", session);
+        model.addAttribute("valuation", session);
         model.addAttribute("vehicle", session.getVehicle());
         model.addAttribute("aiResult", aiResult);
         model.addAttribute("photos", session.getPhotos().stream().map(PhotoView::from).toList());

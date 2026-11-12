@@ -121,14 +121,14 @@
                                 <span class="text-muted small" th:if="${s.odoMileage == null}">-</span>
                             </td>
                             <td>
-                                <strong class="text-primary" th:if="${s.finalPriceVnd != null}" th:text="${#numbers.formatDecimal(s.finalPriceVnd, 0, 'COMMA', 0, 'POINT') + ' đ'}">485.000.000 đ</strong>
-                                <span class="text-muted small" th:if="${s.finalPriceVnd == null}">-</span>
+                                <strong class="text-primary" th:if="${s.displayPriceVnd != null}" th:text="${#numbers.formatDecimal(s.displayPriceVnd, 0, 'COMMA', 0, 'POINT') + ' đ'}">485.000.000 đ</strong>
+                                <span class="text-muted small" th:if="${s.displayPriceVnd == null}">-</span>
                             </td>
                             <td>
                                 <span class="badge bg-success" th:if="${s.status.name() == 'COMPLETED'}">COMPLETED</span>
-                                <span class="badge bg-info text-dark" th:if="${s.status.name() == 'EXPERT_REVIEWED'}">EXPERT_REVIEWED</span>
+                                <span class="badge bg-info text-dark" th:if="${s.status.name() == 'EXPERT_REVIEWING'}">EXPERT_REVIEWING</span>
                                 <span class="badge bg-primary" th:if="${s.status.name() == 'AI_EVALUATED'}">AI_EVALUATED</span>
-                                <span class="badge bg-warning text-dark" th:if="${s.status.name() != 'COMPLETED' && s.status.name() != 'EXPERT_REVIEWED' && s.status.name() != 'AI_EVALUATED'}" th:text="${s.status}">PENDING</span>
+                                <span class="badge bg-warning text-dark" th:if="${s.status.name() != 'COMPLETED' && s.status.name() != 'EXPERT_REVIEWING' && s.status.name() != 'AI_EVALUATED'}" th:text="${s.status}">PENDING</span>
                             </td>
                             <td class="small text-muted" th:text="${#temporals.format(s.createdAt, 'dd/MM/yyyy HH:mm')}">01/01/2026</td>
                             <td class="text-end pe-4">

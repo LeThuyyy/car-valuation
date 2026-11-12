@@ -49,24 +49,24 @@
                                 <span class="text-muted small" th:if="${s.odoMileage == null}">-</span>
                             </td>
                             <td>
-                                <div class="fw-bold text-primary fs-6" th:if="${s.finalPriceVnd != null}" th:text="${#numbers.formatDecimal(s.finalPriceVnd, 0, 'COMMA', 0, 'POINT') + ' đ'}">
+                                <div class="fw-bold text-primary fs-6" th:if="${s.displayPriceVnd != null}" th:text="${#numbers.formatDecimal(s.displayPriceVnd, 0, 'COMMA', 0, 'POINT') + ' đ'}">
                                     485.000.000 đ
                                 </div>
-                                <span class="text-muted small" th:if="${s.finalPriceVnd == null}">Đang chờ tính giá</span>
+                                <span class="text-muted small" th:if="${s.displayPriceVnd == null}">Đang chờ tính giá</span>
                             </td>
                             <td>
                                 <span class="badge bg-success" th:if="${s.status.name() == 'COMPLETED'}">HOÀN TẤT</span>
-                                <span class="badge bg-info text-dark" th:if="${s.status.name() == 'EXPERT_REVIEWED'}">ĐÃ THẨM ĐỊNH</span>
+                                <span class="badge bg-info text-dark" th:if="${s.status.name() == 'EXPERT_REVIEWING'}">CHỜ CHUYÊN GIA</span>
                                 <span class="badge bg-primary" th:if="${s.status.name() == 'AI_EVALUATED'}">AI ĐỊNH GIÁ</span>
-                                <span class="badge bg-warning text-dark" th:if="${s.status.name() != 'COMPLETED' && s.status.name() != 'EXPERT_REVIEWED' && s.status.name() != 'AI_EVALUATED'}">ĐANG THỰC HIỆN</span>
+                                <span class="badge bg-warning text-dark" th:if="${s.status.name() != 'COMPLETED' && s.status.name() != 'EXPERT_REVIEWING' && s.status.name() != 'AI_EVALUATED'}">ĐANG THỰC HIỆN</span>
                             </td>
                             <td class="small text-muted" th:text="${#temporals.format(s.createdAt, 'dd/MM/yyyy HH:mm')}">01/01/2026</td>
                             <td class="text-end pe-4">
-                                <a th:if="${s.status.name() == 'AI_EVALUATED' || s.status.name() == 'EXPERT_REVIEWED' || s.status.name() == 'COMPLETED'}"
+                                <a th:if="${s.status.name() == 'AI_EVALUATED' || s.status.name() == 'EXPERT_REVIEWING' || s.status.name() == 'COMPLETED'}"
                                    th:href="@{'/valuation/' + ${s.id} + '/detail'}" class="btn btn-outline-primary btn-sm">
                                     <i class="bi bi-eye me-1"></i> Xem Báo Cáo
                                 </a>
-                                <a th:if="${s.status.name() != 'AI_EVALUATED' && s.status.name() != 'EXPERT_REVIEWED' && s.status.name() != 'COMPLETED'}"
+                                <a th:if="${s.status.name() == 'DRAFT'}"
                                    th:href="@{'/valuation/' + ${s.id} + '/vin'}" class="btn btn-warning btn-sm">
                                     <i class="bi bi-arrow-right-circle me-1"></i> Tiếp Tục
                                 </a>

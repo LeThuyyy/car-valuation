@@ -62,6 +62,15 @@ public class ValuationService {
     }
 
     @Transactional(readOnly = true)
+    public Optional<ValuationSession> getSessionForViewer(Long sessionId, User viewer) {
+        if (viewer == null) return Optional.empty();
+        if (viewer.getRole() == Role.EXPERT || viewer.getRole() == Role.ADMIN) {
+            return sessionRepository.findById(sessionId);
+        }
+        return sessionRepository.findByIdAndUserId(sessionId, viewer.getId());
+    }
+
+    @Transactional(readOnly = true)
     public Optional<CarPhoto> getPhotoForViewer(Long photoId, User viewer) {
         if (viewer == null) return Optional.empty();
         return photoRepository.findById(photoId).filter(photo ->
@@ -74,10 +83,21 @@ public class ValuationService {
     }
 
     @Transactional
+    public ValuationSession updateVinAndVehicleInfo(Long sessionId, String vin, Vehicle vehicleData, User user) {
+        ValuationSession session = sessionRepository.findByIdAndUserId(sessionId, user.getId())
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy phiên định giá"));
+        session.setVinScanned(vin);
+        return saveVehicleInfo(session, vehicleData, user);
+    }
+
+    @Transactional
     public ValuationSession updateVehicleInfo(Long sessionId, Vehicle vehicleData, User user) {
         ValuationSession session = sessionRepository.findByIdAndUserId(sessionId, user.getId())
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy phiên định giá"));
+        return saveVehicleInfo(session, vehicleData, user);
+    }
 
+    private ValuationSession saveVehicleInfo(ValuationSession session, Vehicle vehicleData, User user) {
         Vehicle vehicle = session.getVehicle();
         if (vehicle == null) {
             vehicle = new Vehicle();
