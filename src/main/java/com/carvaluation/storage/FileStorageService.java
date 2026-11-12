@@ -86,4 +86,8 @@ public class FileStorageService {
     public Path load(String relativePath) {
         return this.rootLocation.resolve(relativePath).normalize().toAbsolutePath();
     }
+
+    public Path getRootLocation() {
+        return rootLocation;
+    }
 }

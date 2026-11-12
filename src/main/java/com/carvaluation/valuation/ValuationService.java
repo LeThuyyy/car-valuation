@@ -1,5 +1,6 @@
 package com.carvaluation.valuation;
 
+import com.carvaluation.auth.Role;
 import com.carvaluation.auth.User;
 import com.carvaluation.damage.DamageAnalysisService;
 import com.carvaluation.damage.DamageReport;
@@ -58,6 +59,14 @@ public class ValuationService {
 
     public Optional<ValuationSession> getSessionById(Long sessionId) {
         return sessionRepository.findById(sessionId);
+    }
+
+    @Transactional(readOnly = true)
+    public Optional<CarPhoto> getPhotoForViewer(Long photoId, User viewer) {
+        if (viewer == null) return Optional.empty();
+        return photoRepository.findById(photoId).filter(photo ->
+                photo.getValuationSession().getUser().getId().equals(viewer.getId())
+                || viewer.getRole() == Role.EXPERT || viewer.getRole() == Role.ADMIN);
     }
 
     public List<ValuationSession> getUserHistory(User user) {

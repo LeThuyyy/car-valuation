@@ -31,7 +31,9 @@ public class SecurityConfig {
         http
             .authorizeHttpRequests(auth -> auth
                 // Tài nguyên tĩnh công khai
-                .requestMatchers("/css/**", "/js/**", "/images/**", "/uploads/**", "/favicon.ico").permitAll()
+                .requestMatchers("/css/**", "/js/**", "/images/**", "/favicon.ico").permitAll()
+                // Never expose uploaded vehicle photos via a public static-resource URL.
+                .requestMatchers("/uploads/**").denyAll()
                 // Trang chủ, Đăng nhập, Đăng ký, API công khai
                 .requestMatchers("/", "/login", "/register", "/about", "/h2-console/**").permitAll()
                 // Phân quyền Quản trị viên
