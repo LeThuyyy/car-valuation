@@ -1,0 +1,28 @@
+name: Báo lỗi
+description: Mô tả lỗi có thể tái hiện được
+labels: [bug]
+body:
+  - type: textarea
+    id: summary
+    attributes:
+      label: Mô tả lỗi
+      description: Điều gì xảy ra và bạn mong đợi điều gì?
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Cách tái hiện
+      placeholder: "1. Đăng nhập...\n2. Mở trang...\n3. Thực hiện..."
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Môi trường
+      description: Trình duyệt, JDK, hệ điều hành, H2/MySQL, cấu hình mock/real AI (không dán bí mật).
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Log hoặc ảnh chụp đã loại bỏ dữ liệu riêng tư
+      description: Không đăng token, mật khẩu, ảnh xe hoặc dữ liệu cá nhân thật.
